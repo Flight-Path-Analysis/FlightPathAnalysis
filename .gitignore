@@ -1,0 +1,8 @@
+node_modules/
+
+# Environment variables
+.env
+
+# OS generated
+.DS_Store
+Thumbs.db
