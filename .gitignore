@@ -6,8 +6,10 @@ node_modules/
 # OS generated
 **/.DS_Store
 Thumbs.db
-prototyping/config.ini
-prototyping/pvt
-prototyping/data
+prototyping/**/*.*
+!prototyping/**/
+data/**/*.*
+!data/**
 **/.ipynb_checkpoints
 /src/backend/opensky-api
+bkp
