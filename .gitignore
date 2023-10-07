@@ -10,3 +10,4 @@ prototyping/config.ini
 prototyping/pvt
 prototyping/data
 **/.ipynb_checkpoints
+/src/backend/opensky-api
