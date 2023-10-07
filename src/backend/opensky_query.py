@@ -16,7 +16,9 @@ class Querier:
 
     Methods:
     - create_query_command_for_flight_data: Generates the SQL query for flight data.
+    - create_query_command_for_state_vectors: Generates the SQL query for state vectors.
     - query_flight_data: Executes the query and returns the results as a DataFrame.
+    - query_state_vectors: Executes the query and returns the results as a DataFrame.
     """
     
     def __init__(self, username, password, hostname, port):
@@ -71,6 +73,36 @@ class Querier:
             query += f'LIMIT {limit};'
         return query
 
+    def create_query_command_for_state_vectors(self, icao24, start_time_unix, end_time_unix, bad_hours, limit=None):
+        """
+        Generate the SQL query command for querying state vectors data from the OpenSky database.
+
+        Parameters:
+        - icao24 (str): ICAO 24-bit address of the aircraft.
+        - start_time_unix (int): Start time in UNIX timestamp format.
+        - end_time_unix (int): End time in UNIX timestamp format.
+        - bad_hours (list): List of UNIX timestamps for hours to exclude from the query.
+        - limit (int, optional): Maximum number of records to retrieve.
+
+        Returns:
+        - str: SQL query command.
+        """
+
+        query =  f"""SELECT time, lat, lon, velocity, heading, baroaltitude, geoaltitude, onground, hour
+    FROM state_vectors_data4
+    WHERE icao24 = '{icao24}' 
+    AND estarrivalairport = '{arrival_airport}'
+    AND (time >= {start_time_unix} AND time <= {end_time_unix})
+    AND (hour > {start_time_unix - 3600} AND hour < {end_time_unix + 3600})
+    """
+        # Add conditions to exclude bad hours
+        for hour in bad_hours:
+            query += f'AND hour != {hour}\n'
+
+        # Add ordering and limit if specified
+        query += 'ORDER BY time\n'
+        return query
+            
     def query_flight_data(self, departure_airport, arrival_airport, start_date, end_date):
         """
         Query flight data from the OpenSky database using the provided client.
@@ -119,4 +151,39 @@ class Querier:
         # Convert the result to a DataFrame and return
         return utils.parse_to_dataframe(results)
     
-    
+    def query_state_vectors(self, icao24, start_time, end_time):
+        """
+        Query state vectors data from the OpenSky database for a specific aircraft.
+
+        Parameters:
+        - icao24 (str): ICAO 24-bit address of the aircraft.
+        - start_time: Start time, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
+        - end_time: End time, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
+
+        Returns:
+        - pd.DataFrame: DataFrame containing the state vectors results.
+        """
+        self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
+            
+            query = self.create_query_command_for_state_vectors(icao24, start_time_unix, end_time_unix, bad_hours)
+            print("Querying: ", query)
+
+            # Execute the query
+            cmd = "-q " + query
+            stdin, stdout, stderr = self.client.exec_command(cmd)
+            results = stdout.read().decode()
+            errors = stderr.read().decode()
+
+            # If Disk I/O error is found, add the hour to bad_hours list
+            if 'Disk I/O error' in errors:
+                print("Bad hour found, trying again.")
+                bad_hours += [eval(errors.split('\n')[3].split('hour=')[-1].split('/')[0])]
+                bad_hours = sorted(bad_hours)
+                print("Bad Hours:")
+                for hour in bad_hours:
+                    print(' - ', datetime.datetime.fromtimestamp(hour).strftime('%Y-%m-%d HH:MM:SS'))
+
+            self.client.close()
+        # Convert the result to a DataFrame and return
+        return utils.parse_to_dataframe(results)
+        
