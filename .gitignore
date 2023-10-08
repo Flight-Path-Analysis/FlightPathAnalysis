@@ -13,3 +13,4 @@ data/**/*.*
 **/.ipynb_checkpoints
 /src/backend/opensky-api
 bkp
+config/opensky_login.yml
