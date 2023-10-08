@@ -1,14 +1,24 @@
 base-configs:
-  root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
-  tag: 'test'
+    # Root directory of where the repo is located
+    root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
+    # Tag for current run for log files
+    tag: 'test'
+    
+    hostname: 'data.opensky-network.org'
+    port: 2230
   
 data-gather:
-  routes-of-interest: [
-  ['KBTR','KDFW'],
-  ['KJFK','EGLL'],
-  ]
-  start-date: '2020-01-01'
-  end-date: '2021-01-01'
+    # Routes of interest to be downloaded on the data gathering step
+    routes-of-interest: [
+    ['KBTR','KDFW'],
+    ['KJFK','EGLL'],
+    ]
+    # Starting date of flights of interest
+    start-date: '2020-01-01'
+    # Ending date of flights of interest
+    end-date: '2021-01-01'
+  
 log:
-  log-directory: 'log/'
+    # Directory where log files are located from the root directory
+    log-directory: 'logs/'
 

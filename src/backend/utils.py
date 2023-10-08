@@ -4,13 +4,7 @@ import warnings
 import dateutil.parser
 import datetime
 import yaml
-
-# Load configurations, path is hardcoded, there might be a better way, but good for now.
-with open('../../config.yml', 'r') as file:
-    try:
-        config = yaml.safe_load(file)
-    except yaml.YAMLError as exc:
-        print("Error loading the config file:", exc)
+import os
 
 def to_number(s):
     """
@@ -88,20 +82,20 @@ def parse_to_dataframe(results):
     lines = results.split('\n')
     first_line, columns_line = lines[0], lines[1]
 
-    # Extract data lines and split by delimiter
-    data_lines = [
-        line.replace(' ', '').replace('\t', '').split('|')[1:-1]
-        for line in lines[2:-1] if line != first_line and line != columns_line
-    ]
+    # Extract data lines
+    good_lines = [line for line in lines[2:-1] if line != first_line and line != columns_line and len(line.replace('+','').replace('-','')) != 0]
+    
+    # Clean up lines and split them
+    good_lines = [line.replace(' ', '').replace('\t', '').split('|')[1:-1] for line in good_lines]
     
     # Extract column names
     columns = columns_line.replace(' ', '').replace('\t', '').split('|')[1:-1]
 
-    # Extract column names
-    columns = columns_line.replace(' ', '').replace('\t', '').split('|')[1:-1]
-
-    # Create and return DataFrame
-    return pd.DataFrame(np.array(good_lines).T, columns=columns).applymap(to_number)
+    # Create DataFrame
+    df_data = np.array(good_lines).T
+    df_dict = {col: df_data[i] for i, col in enumerate(columns)}
+    df = pd.DataFrame(df_dict).applymap(to_number)
+    return df[df[df.columns[0]].apply(lambda x: not isinstance(x, str))]
 
 def to_unix_timestamp(date_input):
     """
@@ -165,10 +159,10 @@ def to_unix_timestamp(date_input):
     raise ValueError("Unsupported date format")
 
 class Logger:
-    def __init__(config):
+    def __init__(self, config):
         self.config = config
         
-    def clean_path(path):
+    def clean_path(self, path):
         """
         Ensure the provided path string ends with a '/'.
 
@@ -180,18 +174,23 @@ class Logger:
         """
         return path if path.endswith('/') else path + '/'
 
-    def log(text):
+    def log(self, text):
         """
         Log the provided text with a timestamp to the specified log file.
 
         Parameters:
         - text (str): Text message to be logged.
-
-        Note:
-        The logging location and filename are derived from the global `config` dictionary.
         """
         date = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
-        log_directory = clean_path(self.config['log']['log-directory'])
+        root_dir = self.clean_path(self.config['base-configs']['root-directory'])
+        log_directory = self.clean_path(self.config['log']['log-directory'])
+
+        log_directory = f'{root_dir}{log_directory}'
+
+        # Check if the log directory exists, if not, create it
+        if not os.path.exists(log_directory):
+            os.makedirs(log_directory)
+
         tag = self.config['base-configs']['tag']
 
         log_file = f'{log_directory}{tag}.log'

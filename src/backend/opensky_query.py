@@ -60,7 +60,7 @@ class Querier:
         - str: SQL query command.
         """
         # Begin SQL command
-        query =  f"""SELECT callsign, icao24, firstseen, lastseen, estdepartureairport, estarrivalairport, day
+        query =  f"""SELECT firstseen, lastseen, callsign, icao24, estdepartureairport, estarrivalairport, day
     FROM flights_data4 
     WHERE estdepartureairport = '{departure_airport}' 
     AND estarrivalairport = '{arrival_airport}'
@@ -72,11 +72,11 @@ class Querier:
             query += f'AND day != {day}\n'
 
         # Add ordering and limit if specified
-        query += 'ORDER BY firstseen\n'
+        query += 'ORDER BY firstseen'
         if limit is None:
             query += ';'
         else:
-            query += f'LIMIT {limit};'
+            query += f'\nLIMIT {limit};'
         return query
 
     def create_query_command_for_state_vectors(self, icao24, start_time_unix, end_time_unix, bad_hours, limit=None):
@@ -97,7 +97,6 @@ class Querier:
         query =  f"""SELECT time, lat, lon, velocity, heading, baroaltitude, geoaltitude, onground, hour
     FROM state_vectors_data4
     WHERE icao24 = '{icao24}' 
-    AND estarrivalairport = '{arrival_airport}'
     AND (time >= {start_time_unix} AND time <= {end_time_unix})
     AND (hour > {start_time_unix - 3600} AND hour < {end_time_unix + 3600})
     """
@@ -106,7 +105,7 @@ class Querier:
             query += f'AND hour != {hour}\n'
 
         # Add ordering and limit if specified
-        query += 'ORDER BY time\n'
+        query += 'ORDER BY time;'
         return query
             
     def query_flight_data(self, departure_airport, arrival_airport, start_date, end_date):
@@ -134,11 +133,14 @@ class Querier:
         start_date_unix = utils.to_unix_timestamp(start_date)
         end_date_unix = utils.to_unix_timestamp(end_date)
         
+        start_date_str = datetime.datetime.fromtimestamp(start_date_unix).strftime('%Y-%m-%d HH:MM:SS')
+        end_date_str = datetime.datetime.fromtimestamp(end_date_unix).strftime('%Y-%m-%d HH:MM:SS')
+        
         # Array to save the days that return an error from the query
         bad_days = []
         
         # Logs the initial query 
-        log_verbose(f'Querying data for flights from {departure_airport} to {arrival_airport} between the dates {datetime.datetime.fromtimestamp(start_date_unix).strftime('%Y-%m-%d')} and {datetime.datetime.fromtimestamp(end_date_unix).strftime('%Y-%m-%d')}')
+        log_verbose(f'Querying data for flights from {departure_airport} to {arrival_airport} between the dates {start_date_str} and {end_date_str}')
         
         # Connecting to client
         self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
@@ -165,7 +167,8 @@ class Querier:
             bad_days = sorted(bad_days)
             log_verbose("Bad Days:")
             for day in bad_days:
-                log_verbose(' - ', datetime.datetime.fromtimestamp(day).strftime('%Y-%m-%d'))
+                date_str = datetime.datetime.fromtimestamp(day).strftime('%Y-%m-%d HH:MM:SS')
+                log_verbose(f' - {date_str}')
 
             self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
             query = self.create_query_command_for_flight_data(departure_airport, arrival_airport, start_date_unix, end_date_unix, bad_days)
@@ -177,6 +180,7 @@ class Querier:
             self.client.close()
             
         # Convert the result to a DataFrame and return
+
         return utils.parse_to_dataframe(results)
     
     def query_state_vectors(self, icao24, start_time, end_time):
@@ -205,11 +209,14 @@ class Querier:
         start_time_unix = utils.to_unix_timestamp(start_time)
         end_time_unix = utils.to_unix_timestamp(end_time)
         
+        start_time_str = datetime.datetime.fromtimestamp(start_time_unix).strftime('%Y-%m-%d')
+        end_time_str = datetime.datetime.fromtimestamp(end_time_unix).strftime('%Y-%m-%d')
+        
         # Array to save the days that return an error from the query
         bad_hours = []
 
         # Logs the initial query 
-        log_verbose(f'Querying data for statevectors for ICAO24 {icao24} between the times {datetime.datetime.fromtimestamp(start_time_unix).strftime('%Y-%m-%d')} and {datetime.datetime.fromtimestamp(end_time_unix).strftime('%Y-%m-%d')}')
+        log_verbose(f'Querying data for statevectors for ICAO24 {icao24} between the times {start_time_str} and {end_time_str}')
             
         # Connecting to client
         self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
@@ -236,7 +243,8 @@ class Querier:
             bad_hours = sorted(bad_hours)
             log_verbose("Bad Hours:")
             for hour in bad_hours:
-                log_verbose(f' - {datetime.datetime.fromtimestamp(hour).strftime("%Y-%m-%d %H:%M:%S")}')
+                date_str = datetime.datetime.fromtimestamp(day).strftime('%Y-%m-%d')
+                log_verbose(f' - {date_str}')
             # Re-query
             self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
             query = self.create_query_command_for_state_vectors(icao24, start_time_unix, end_time_unix, bad_hours)
@@ -246,5 +254,5 @@ class Querier:
             results = stdout.read().decode()
             errors = stderr.read().decode()
             self.client.close()
-            
+        
         return utils.parse_to_dataframe(results)

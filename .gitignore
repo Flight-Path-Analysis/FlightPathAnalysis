@@ -14,3 +14,5 @@ data/**/*.*
 /src/backend/opensky-api
 bkp
 config/opensky_login.yml
+logs/*
+!logs/.gitkeep
