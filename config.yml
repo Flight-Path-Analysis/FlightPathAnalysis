@@ -1,0 +1,14 @@
+base-configs:
+  root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
+  tag: 'test'
+  
+data-gather:
+  routes-of-interest: [
+  ['KBTR','KDFW'],
+  ['KJFK','EGLL'],
+  ]
+  start-date: '2020-01-01'
+  end-date: '2021-01-01'
+log:
+  log-directory: 'log/'
+

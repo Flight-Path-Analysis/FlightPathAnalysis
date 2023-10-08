@@ -13,6 +13,7 @@ class Querier:
     - hostname (str): Hostname for the SSH connection.
     - port (int): Port number for the SSH connection.
     - client (paramiko.SSHClient): An SSH client instance to manage SSH connections.
+    - logger (utils.Logger): The Logger class instance to log text outputs
 
     Methods:
     - create_query_command_for_flight_data: Generates the SQL query for flight data.
@@ -21,7 +22,7 @@ class Querier:
     - query_state_vectors: Executes the query and returns the results as a DataFrame.
     """
     
-    def __init__(self, username, password, hostname, port):
+    def __init__(self, username, password, hostname, port, logger = None):
         """
         Initialize an instance of the Querier class.
 
@@ -30,12 +31,17 @@ class Querier:
         - password (str): SSH password.
         - hostname (str): SSH hostname.
         - port (int): SSH port number.
+        - client (paramiko.SSHClient): An SSH client instance to manage SSH connections.
+        - logger (utils.Logger): The Logger class instance to log text outputs
         """
+        
         self.__username = username
         self.__password = password
         self.hostname = hostname
         self.port = port
         self.client = paramiko.SSHClient()
+        self.logger = logger
+        
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     def create_query_command_for_flight_data(self, departure_airport, arrival_airport, start_date_unix, end_date_unix, bad_days, limit=None):
@@ -103,7 +109,7 @@ class Querier:
         query += 'ORDER BY time\n'
         return query
             
-    def query_flight_data(self, departure_airport, arrival_airport, start_date, end_date, logger = None):
+    def query_flight_data(self, departure_airport, arrival_airport, start_date, end_date):
         """
         Query flight data from the OpenSky database using the provided client.
 
@@ -112,17 +118,16 @@ class Querier:
         - arrival_airport (str): ICAO code of the arrival airport.
         - start_date: Start date, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
         - end_date: Start date, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
-        - logger (utils.Logger, optional): Logger instance for verbose logging. Defaults to None.
 
         Returns:
         - pd.DataFrame: DataFrame containing the flight data results.
         """
         # Function that will log text if logger is different than None
         def log_verbose(message):
-            if logger:
-                logger.log(message)
+            if self.logger:
+                self.logger.log(message)
         # If logger is NOT None, checks if it's an isnstance of utils.Logger
-        if logger and not isinstance(logger, utils.Logger):
+        if self.logger and not isinstance(self.logger, utils.Logger):
             raise ValueError("Expected logger to be an instance of utils.Logger")
 
         # Convert dates to UNIX timestamps
@@ -174,7 +179,7 @@ class Querier:
         # Convert the result to a DataFrame and return
         return utils.parse_to_dataframe(results)
     
-    def query_state_vectors(self, icao24, start_time, end_time, logger=None):
+    def query_state_vectors(self, icao24, start_time, end_time):
         """
         Query state vectors data from the OpenSky database for a specific aircraft.
 
@@ -189,11 +194,11 @@ class Querier:
         """
         # Function that will log text if logger is different than None
         def log_verbose(message):
-            if logger:
-                logger.log(message)
+            if self.logger:
+                self.logger.log(message)
         
         # If logger is NOT None, checks if it's an isnstance of utils.Logger
-        if logger and not isinstance(logger, utils.Logger):
+        if self.logger and not isinstance(self.logger, utils.Logger):
             raise ValueError("Expected logger to be an instance of utils.Logger")
 
         # Convert dates to UNIX timestamps
@@ -241,4 +246,5 @@ class Querier:
             results = stdout.read().decode()
             errors = stderr.read().decode()
             self.client.close()
+            
         return utils.parse_to_dataframe(results)
