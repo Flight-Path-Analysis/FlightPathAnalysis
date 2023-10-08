@@ -4,6 +4,7 @@ node_modules/
 .env
 
 # OS generated
+**/__pycache__
 **/.DS_Store
 Thumbs.db
 prototyping/**/*.*
