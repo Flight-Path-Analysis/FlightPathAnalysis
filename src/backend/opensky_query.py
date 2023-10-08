@@ -103,7 +103,7 @@ class Querier:
         query += 'ORDER BY time\n'
         return query
             
-    def query_flight_data(self, departure_airport, arrival_airport, start_date, end_date):
+    def query_flight_data(self, departure_airport, arrival_airport, start_date, end_date, logger = None):
         """
         Query flight data from the OpenSky database using the provided client.
 
@@ -112,46 +112,69 @@ class Querier:
         - arrival_airport (str): ICAO code of the arrival airport.
         - start_date: Start date, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
         - end_date: Start date, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
+        - logger (utils.Logger, optional): Logger instance for verbose logging. Defaults to None.
 
         Returns:
         - pd.DataFrame: DataFrame containing the flight data results.
         """
+        # Function that will log text if logger is different than None
+        def log_verbose(message):
+            if logger:
+                logger.log(message)
+        # If logger is NOT None, checks if it's an isnstance of utils.Logger
+        if logger and not isinstance(logger, utils.Logger):
+            raise ValueError("Expected logger to be an instance of utils.Logger")
+
         # Convert dates to UNIX timestamps
         start_date_unix = utils.to_unix_timestamp(start_date)
         end_date_unix = utils.to_unix_timestamp(end_date)
-
-        # Expected error message on successful query execution
-        error_message_on_success = 'Starting Impala Shell without Kerberos authentication\n'
-        errors = ''
+        
+        # Array to save the days that return an error from the query
         bad_days = []
-
+        
+        # Logs the initial query 
+        log_verbose(f'Querying data for flights from {departure_airport} to {arrival_airport} between the dates {datetime.datetime.fromtimestamp(start_date_unix).strftime('%Y-%m-%d')} and {datetime.datetime.fromtimestamp(end_date_unix).strftime('%Y-%m-%d')}')
+        
+        # Connecting to client
+        self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
+        
+        # Building the query
+        query = self.create_query_command_for_flight_data(departure_airport, arrival_airport, start_date_unix, end_date_unix, bad_days)
+           
+        # Logs query
+        log_verbose(f"Querying: {query}")
+        
+        # Execute the query
+        cmd = f'-q {query}'
+        stdin, stdout, stderr = self.client.exec_command(cmd)
+        results = stdout.read().decode()
+        errors = stderr.read().decode()
+        
+        # Closing the client
+        self.client.close()
+        
         # Continue querying until successful or all bad days are excluded
-        while errors != error_message_on_success:
-            self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
-            
-            query = self.create_query_command_for_flight_data(departure_airport, arrival_airport, start_date_unix, end_date_unix, bad_days)
-            print("Querying: ", query)
+        while 'Disk I/O error' in errors:
+            log_verbose("Bad day found, trying again.")
+            bad_days += [eval(errors.split('\n')[3].split('day=')[-1].split('/')[0])]
+            bad_days = sorted(bad_days)
+            log_verbose("Bad Days:")
+            for day in bad_days:
+                log_verbose(' - ', datetime.datetime.fromtimestamp(day).strftime('%Y-%m-%d'))
 
-            # Execute the query
-            cmd = "-q " + query
+            self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
+            query = self.create_query_command_for_flight_data(departure_airport, arrival_airport, start_date_unix, end_date_unix, bad_days)
+            log_verbose(f"Querying: {query}")
+            cmd = f'-q {query}'
             stdin, stdout, stderr = self.client.exec_command(cmd)
             results = stdout.read().decode()
             errors = stderr.read().decode()
-
-            # If Disk I/O error is found, add the day to bad_days list
-            if 'Disk I/O error' in errors:
-                print("Bad day found, trying again.")
-                bad_days += [eval(errors.split('\n')[3].split('day=')[-1].split('/')[0])]
-                bad_days = sorted(bad_days)
-                print("Bad Days:")
-                for day in bad_days:
-                    print(' - ', datetime.datetime.fromtimestamp(day).strftime('%Y-%m-%d'))
-
             self.client.close()
+            
         # Convert the result to a DataFrame and return
         return utils.parse_to_dataframe(results)
     
-    def query_state_vectors(self, icao24, start_time, end_time):
+    def query_state_vectors(self, icao24, start_time, end_time, logger=None):
         """
         Query state vectors data from the OpenSky database for a specific aircraft.
 
@@ -159,31 +182,63 @@ class Querier:
         - icao24 (str): ICAO 24-bit address of the aircraft.
         - start_time: Start time, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
         - end_time: End time, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
+        - logger (utils.Logger, optional): Logger instance for verbose logging. Defaults to None.
 
         Returns:
         - pd.DataFrame: DataFrame containing the state vectors results.
         """
-        self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
-            
-            query = self.create_query_command_for_state_vectors(icao24, start_time_unix, end_time_unix, bad_hours)
-            print("Querying: ", query)
+        # Function that will log text if logger is different than None
+        def log_verbose(message):
+            if logger:
+                logger.log(message)
+        
+        # If logger is NOT None, checks if it's an isnstance of utils.Logger
+        if logger and not isinstance(logger, utils.Logger):
+            raise ValueError("Expected logger to be an instance of utils.Logger")
 
-            # Execute the query
+        # Convert dates to UNIX timestamps
+        start_time_unix = utils.to_unix_timestamp(start_time)
+        end_time_unix = utils.to_unix_timestamp(end_time)
+        
+        # Array to save the days that return an error from the query
+        bad_hours = []
+
+        # Logs the initial query 
+        log_verbose(f'Querying data for statevectors for ICAO24 {icao24} between the times {datetime.datetime.fromtimestamp(start_time_unix).strftime('%Y-%m-%d')} and {datetime.datetime.fromtimestamp(end_time_unix).strftime('%Y-%m-%d')}')
+            
+        # Connecting to client
+        self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
+        
+        # Building the query
+        query = self.create_query_command_for_state_vectors(icao24, start_time_unix, end_time_unix, bad_hours)
+        
+        # Logs query
+        log_verbose(f"Querying: {query}")
+        
+        # Execute the query
+        cmd = f'-q {query}'
+        stdin, stdout, stderr = self.client.exec_command(cmd)
+        results = stdout.read().decode()
+        errors = stderr.read().decode()
+        
+        # Closing client
+        self.client.close()
+        
+        # Continue querying until successful or all bad days are excluded
+        while 'Disk I/O error' in errors:
+            log_verbose("Bad hour found, trying again.")
+            bad_hours += [eval(errors.split('\n')[3].split('hour=')[-1].split('/')[0])]
+            bad_hours = sorted(bad_hours)
+            log_verbose("Bad Hours:")
+            for hour in bad_hours:
+                log_verbose(f' - {datetime.datetime.fromtimestamp(hour).strftime("%Y-%m-%d %H:%M:%S")}')
+            # Re-query
+            self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
+            query = self.create_query_command_for_state_vectors(icao24, start_time_unix, end_time_unix, bad_hours)
+            log_verbose(f"Querying: {query}")
             cmd = "-q " + query
             stdin, stdout, stderr = self.client.exec_command(cmd)
             results = stdout.read().decode()
             errors = stderr.read().decode()
-
-            # If Disk I/O error is found, add the hour to bad_hours list
-            if 'Disk I/O error' in errors:
-                print("Bad hour found, trying again.")
-                bad_hours += [eval(errors.split('\n')[3].split('hour=')[-1].split('/')[0])]
-                bad_hours = sorted(bad_hours)
-                print("Bad Hours:")
-                for hour in bad_hours:
-                    print(' - ', datetime.datetime.fromtimestamp(hour).strftime('%Y-%m-%d HH:MM:SS'))
-
             self.client.close()
-        # Convert the result to a DataFrame and return
         return utils.parse_to_dataframe(results)
-        

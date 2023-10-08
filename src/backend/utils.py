@@ -3,6 +3,14 @@ import pandas as pd
 import warnings
 import dateutil.parser
 import datetime
+import yaml
+
+# Load configurations, path is hardcoded, there might be a better way, but good for now.
+with open('../../config.yml', 'r') as file:
+    try:
+        config = yaml.safe_load(file)
+    except yaml.YAMLError as exc:
+        print("Error loading the config file:", exc)
 
 def to_number(s):
     """
@@ -78,22 +86,22 @@ def parse_to_dataframe(results):
         return pd.DataFrame()
 
     lines = results.split('\n')
-    first_line = lines[0]
-    columns_line = lines[1]
+    first_line, columns_line = lines[0], lines[1]
 
-    # Extract data lines
-    good_lines = [line for line in lines[2:-1] if line != first_line and line != columns_line]
-    
-    # Clean up lines and split them
-    good_lines = [line.replace(' ', '').replace('\t', '').split('|')[1:-1] for line in good_lines]
+    # Extract data lines and split by delimiter
+    data_lines = [
+        line.replace(' ', '').replace('\t', '').split('|')[1:-1]
+        for line in lines[2:-1] if line != first_line and line != columns_line
+    ]
     
     # Extract column names
     columns = columns_line.replace(' ', '').replace('\t', '').split('|')[1:-1]
 
-    # Create DataFrame
-    df_data = np.array(good_lines).T
-    df_dict = {col: df_data[i] for i, col in enumerate(columns)}
-    return pd.DataFrame(df_dict).applymap(to_number)
+    # Extract column names
+    columns = columns_line.replace(' ', '').replace('\t', '').split('|')[1:-1]
+
+    # Create and return DataFrame
+    return pd.DataFrame(np.array(good_lines).T, columns=columns).applymap(to_number)
 
 def to_unix_timestamp(date_input):
     """
@@ -141,13 +149,10 @@ def to_unix_timestamp(date_input):
     if isinstance(date_input, str):
         try:
             # If it's a string representing a UNIX timestamp
-            timestamp = int(float(date_input))
-            return timestamp
+            return int(float(date_input))
         except ValueError:
             # Otherwise, treat it as a date string and parse it
-            parsed_date = dateutil.parser.parse(date_input)
-            timestamp = int(parsed_date.timestamp())
-            return timestamp
+            return int(dateutil.parser.parse(date_input).timestamp())
     
     # If it's a datetime.datetime object
     if isinstance(date_input, datetime.datetime):
@@ -155,8 +160,42 @@ def to_unix_timestamp(date_input):
     
     # If it's a date object, convert to UNIX timestamp
     if isinstance(date_input, datetime.date):
-        datetime_object = datetime.datetime(date_input.year, date_input.month, date_input.day)
-        timestamp = int(datetime_object.timestamp())
-        return timestamp
+        return int(datetime.datetime(date_input.year, date_input.month, date_input.day).timestamp())
 
     raise ValueError("Unsupported date format")
+
+class Logger:
+    def __init__(config):
+        self.config = config
+        
+    def clean_path(path):
+        """
+        Ensure the provided path string ends with a '/'.
+
+        Parameters:
+        - path (str): A directory path.
+
+        Returns:
+        - str: Path with a trailing '/' if it was missing.
+        """
+        return path if path.endswith('/') else path + '/'
+
+    def log(text):
+        """
+        Log the provided text with a timestamp to the specified log file.
+
+        Parameters:
+        - text (str): Text message to be logged.
+
+        Note:
+        The logging location and filename are derived from the global `config` dictionary.
+        """
+        date = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
+        log_directory = clean_path(self.config['log']['log-directory'])
+        tag = self.config['base-configs']['tag']
+
+        log_file = f'{log_directory}{tag}.log'
+        with open(log_file, 'a') as f:
+            log_entry = f'{date} : {text}\n'
+            print(log_entry, end='')  # Printing without extra newline since log_entry includes it
+            f.write(log_entry)
