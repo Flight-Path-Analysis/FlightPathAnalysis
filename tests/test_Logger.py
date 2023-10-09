@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../")
 from src.backend.utils import Logger
 import os
 import datetime
