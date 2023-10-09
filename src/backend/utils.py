@@ -136,6 +136,7 @@ def to_unix_timestamp(date_input):
     representing dates or UNIX timestamps, date objects, datetime objects, 
     and integer or float representations of UNIX timestamps. It then converts 
     and returns the corresponding UNIX timestamp as an integer.
+    It assumes date inputs as being in the UTC timezone
     
     Parameters:
     - date_input: The date input to be converted. Can be a string containing a date in 
@@ -177,18 +178,31 @@ def to_unix_timestamp(date_input):
             return int(float(date_input))
         except ValueError:
             try:
-                # Otherwise, treat it as a date string and parse it
-                return int(dateutil.parser.parse(date_input).timestamp())
+                # Parse the string into a datetime object
+                dt = dateutil.parser.parse(date_input)
+                # Convert the datetime to UTC if it's not already
+                if dt.tzinfo is not None:
+                    dt = dt.astimezone(datetime.timezone.utc)
+                else:
+                    dt = dt.replace(tzinfo=datetime.timezone.utc)
+                # Return the UNIX timestamp
+                return int(dt.timestamp())
             except:
                 raise ValueError("Unsupported date format")
     
     # If it's a datetime.datetime object
     if isinstance(date_input, datetime.datetime):
+        # Convert the datetime to UTC if it's not already
+        if date_input.tzinfo is not None:
+            date_input = date_input.astimezone(datetime.timezone.utc)
+        else:
+            date_input = date_input.replace(tzinfo=datetime.timezone.utc)
         return int(date_input.timestamp())
     
-    # If it's a date object, convert to UNIX timestamp
+    # If it's a date object, convert to a UTC datetime then to UNIX timestamp
     if isinstance(date_input, datetime.date):
-        return int(datetime.datetime(date_input.year, date_input.month, date_input.day).timestamp())
+        dt = datetime.datetime(date_input.year, date_input.month, date_input.day, tzinfo=datetime.timezone.utc)
+        return int(dt.timestamp())
 
     raise ValueError("Unsupported date format")
 
