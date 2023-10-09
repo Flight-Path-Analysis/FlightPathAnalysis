@@ -1,9 +1,7 @@
-import sys
-sys.path.append('../src/backend/')
+from src.backend.utils import Logger
 import os
 import datetime
 import pytest
-from utils import Logger
 
 @pytest.fixture
 def mock_logger():
