@@ -124,7 +124,7 @@ def parse_to_dataframe(results):
         df_data = np.array(data_lines).T
         df_dict = {col: df_data[i] for i, col in enumerate(columns)}
         
-    df = pd.DataFrame(df_dict).applymap(to_number)
+    df = pd.DataFrame(df_dict).map(to_number)
     
     return df
 
