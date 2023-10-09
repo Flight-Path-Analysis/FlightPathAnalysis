@@ -1,6 +1,6 @@
 import sys
-sys.path.append('../src/backend/')
-from utils import to_number, parse_to_dataframe, to_unix_timestamp
+sys.path.append("../")
+from src.backend.utils import to_number, parse_to_dataframe, to_unix_timestamp
 import pandas as pd
 import pytest
 import re
@@ -171,17 +171,17 @@ def test_to_unix_timestamp():
     
     input_good_2 = "2022-01-01 00:00:00"
     
-    input_good_3 = "1641016800"
+    input_good_3 = "1640995200"
     
-    input_good_4 = 1641016800
+    input_good_4 = 1640995200
     
-    input_good_5 = 1641016800.0
+    input_good_5 = 1640995200.0
     
     input_good_5 = datetime.date(2022, 1, 1)
     
     input_good_6 = datetime.datetime(2022, 1, 1, 0, 0)
     
-    output_good = 1641016800
+    output_good = 1640995200
     
     input_bad_1 = "a"
     
