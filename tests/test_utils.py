@@ -1,6 +1,4 @@
-import sys
-sys.path.append('../src/backend/')
-from utils import to_number, parse_to_dataframe, to_unix_timestamp
+from src.backend.utils import to_number, parse_to_dataframe, to_unix_timestamp
 import pandas as pd
 import pytest
 import re
