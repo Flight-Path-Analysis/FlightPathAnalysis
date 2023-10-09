@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../")
 from src.backend.utils import to_number, parse_to_dataframe, to_unix_timestamp
 import pandas as pd
 import pytest
