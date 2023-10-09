@@ -31,16 +31,19 @@ def to_number(s):
     >>> to_number("hello")
     'hello'
     """
-    
-    try:
-        # Try to convert to an integer
-        return int(s)
-    except ValueError:
+    if not isinstance(s, str):
+        return s
+    elif '.' in s:
         try:
-            # Try to convert to a floating-point number
+            # Try to convert to a float
             return float(s)
         except ValueError:
-            # Not a number
+            return s
+    else:
+        try:
+            # Try to convert to a float
+            return int(s)
+        except ValueError:
             return s
         
 def parse_to_dataframe(results):
@@ -65,37 +68,65 @@ def parse_to_dataframe(results):
     - If the input results string is empty, a warning is issued and an empty DataFrame is returned.
     
     Example:
-    - Input: +----------+--------+------------+------------+---------------------+-------------------+
-             | callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
-             +----------+--------+------------+------------+---------------------+-------------------+
-             | SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |
-             +----------+--------+------------+------------+---------------------+-------------------+
+    - Input: \
+    +----------+--------+------------+------------+---------------------+-------------------+
+     | callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
+    +----------+--------+------------+------------+---------------------+-------------------+
+     | SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |
+    +----------+--------+------------+------------+---------------------+-------------------+
    - Output:
                 callsign  icao24   firstseen    lastseen    estdepartureairport  estarrivalairport  
              0  DAL1199   a0a6c5   1688674458   1688676085  KBTR                 NULL
     """
+    # Checks if input is a string
+    if not isinstance(results, str):
+        raise ValueError("Provided results is not in string format.")
     # Checks if input is an empty string
     if not results.strip():
-        warnings.warn("Provided results string is empty. Returning an empty DataFrame.")
-        return pd.DataFrame()
+        raise ValueError("Provided results string is empty. Returning an empty DataFrame.")
 
     lines = results.split('\n')
-    first_line, columns_line = lines[0], lines[1]
-
-    # Extract data lines
-    good_lines = [line for line in lines[2:-1] if line != first_line and line != columns_line and len(line.replace('+','').replace('-','')) != 0]
+    if len(lines) < 4:
+        raise ValueError(f'Invalid input, results should consist of at least 4 lines, even if empty of data.{results}')
+        
+    first_line, columns_line, third_line, last_line = lines[0], lines[1], lines[2], lines[-1]
     
-    # Clean up lines and split them
-    good_lines = [line.replace(' ', '').replace('\t', '').split('|')[1:-1] for line in good_lines]
-    
+    # Checks if first third, and last lines are properly formatted
+    if (len(first_line.replace('+','').replace('-','')) != 0) or \
+       (len(third_line.replace('+','').replace('-','')) != 0) or \
+       (len(last_line.replace('+','').replace('-','')) != 0):
+        raise ValueError("Invalid input, first, third, and last line is expected to contain nothing but \"+\" and \"-\"")
+        
+    if not columns_line.startswith(' |') or not columns_line.endswith('|'):
+        raise ValueError(f"Column lines should start with \" |\" and end with \"|\". {columns_line}")
+        
     # Extract column names
     columns = columns_line.replace(' ', '').replace('\t', '').split('|')[1:-1]
 
+    # Extract data lines
+    data_lines = [line for line in lines[2:-1] if line != columns_line and not all(char in ['+', '-'] for char in line)]
+    
+    # Testing for consistency of data_lines
+    n_cols = len(columns)
+    for i, line in enumerate(data_lines):
+        if line.count('|') != n_cols + 1:
+            raise ValueError(f"Invalid input, data line {i} does not agree with columns format\n{line}")
+        if not line.startswith(' |') or not line.endswith('|'):
+            raise ValueError(f"Data lines should start with \" |\" and end with \"|\". {i}, {line}")
+    
+    # Clean up lines and split them
+    data_lines = [line.replace(' ', '').replace('\t', '').split('|')[1:-1] for line in data_lines]  
+
     # Create DataFrame
-    df_data = np.array(good_lines).T
-    df_dict = {col: df_data[i] for i, col in enumerate(columns)}
+    if len(data_lines) == 0:
+        df_dict = {col: [] for i, col in enumerate(columns)}
+    else:
+        df_data = np.array(data_lines).T
+        df_dict = {col: df_data[i] for i, col in enumerate(columns)}
+        
     df = pd.DataFrame(df_dict).applymap(to_number)
-    return df[df[df.columns[0]].apply(lambda x: not isinstance(x, str))]
+    
+    return df
 
 def to_unix_timestamp(date_input):
     """
@@ -145,8 +176,11 @@ def to_unix_timestamp(date_input):
             # If it's a string representing a UNIX timestamp
             return int(float(date_input))
         except ValueError:
-            # Otherwise, treat it as a date string and parse it
-            return int(dateutil.parser.parse(date_input).timestamp())
+            try:
+                # Otherwise, treat it as a date string and parse it
+                return int(dateutil.parser.parse(date_input).timestamp())
+            except:
+                raise ValueError("Unsupported date format")
     
     # If it's a datetime.datetime object
     if isinstance(date_input, datetime.datetime):
@@ -172,7 +206,10 @@ class Logger:
         Returns:
         - str: Path with a trailing '/' if it was missing.
         """
-        return path if path.endswith('/') else path + '/'
+        if isinstance(path, str):
+            return path if path.endswith('/') else path + '/'
+
+        raise ValueError('Path must be a string')
 
     def log(self, text):
         """
@@ -181,6 +218,9 @@ class Logger:
         Parameters:
         - text (str): Text message to be logged.
         """
+        if not isinstance(text, str):
+            raise ValueError('Text to log must be a string')
+        
         date = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
         root_dir = self.clean_path(self.config['base-configs']['root-directory'])
         log_directory = self.clean_path(self.config['log']['log-directory'])
