@@ -1,7 +1,6 @@
 from scipy.interpolate import UnivariateSpline
 import numpy as np
 from scipy.interpolate import BSpline
-from scipy.stats import pearsonr
 from IPython.display import clear_output
 from pympler import asizeof
 import sys
@@ -14,18 +13,18 @@ class SplineCompressor:
     SplineCompressor offers utilities to compress and encode data using B-splines.
 
     It provides methods to determine the optimal smoothing factor for splines,
-    compute Pearson correlation coefficients for the original data and the spline-reconstructed data,
+    compute the uncertainty of the spline-reconstructed data against the original data 
     and encode and decode splines for more compact storage or transmission.
 
     Attributes:
-    - pearson_corr_range_threshold (float): Threshold for acceptable range of Pearson correlation.
+    - max_error (float): Threshold for acceptable range of uncertainty calculation.
     - s_min_precision (float): Minimum acceptable precision for the smoothing factor 's'.
     - s_base_precision (float): Starting precision for the smoothing factor 's'.
     - logger (utils.Logger, optional): Logging utility.
 
     Methods:
     - best_spline_s(xs, ys): Determine optimal 's' for a UnivariateSpline.
-    - compute_spline_pearson_corr(xs, ys, spline): Compute Pearson correlation between original and spline data.
+    - compute_spline_uncertainty(xs, ys, spline): Compute uncertainty if the spline data against the original.
     - encode_spline(spline, metadata={}): Convert spline to metadata dictionary.
     - optimize_and_encode_spline(xs, ys, metadata={}): Optimize spline and convert to metadata.
     - compute_compression_factor(xs, ys, metadata): Compute compression factor of encoding.
@@ -41,14 +40,14 @@ class SplineCompressor:
         - logger (utils.Logger): Logging utility for the compressor (default is None).
         """
         self.config = config
-        self.pearson_corr_range_threshold = config['data-compression']['spline-compressor']['pearson_corr_range_threshold']
-        self.s_min_precision = config['data-compression']['spline-compressor']['s_minimum_precision']
-        self.s_base_precision = config['data-compression']['spline-compressor']['s_base_precision']
+        self.max_error = config['data-compression']['spline-compressor']['max-error']
+        self.s_min_precision = config['data-compression']['spline-compressor']['s-minimum-precision']
+        self.s_base_precision = config['data-compression']['spline-compressor']['s-base-precision']
         self.logger = logger
     
     def best_spline_s(self, xs, ys):
         """
-        Determine the best smoothing factor 's' for a UnivariateSpline that achieves a desired Pearson correlation
+        Determine the best smoothing factor 's' for a UnivariateSpline that achieves a desired uncertainty
         while attempting to minimize the number of spline coefficients and knots.
 
         Parameters:
@@ -66,22 +65,13 @@ class SplineCompressor:
         s_precision = self.s_base_precision
         s = 0
 
-        # Calculate correlation for the worst-case (no smoothing)
-        worst_spline = UnivariateSpline(xs, ys, s=np.inf)
-        worst_corr = self.compute_spline_pearson_corr(xs, ys, worst_spline)
-
-        # Set correlation threshold based on the worst case
-        corr_thresh = worst_corr + (1 - worst_corr) * self.pearson_corr_range_threshold
-
-
         # Increase 's' until we achieve the desired correlation or until s_precision is too small
         while s_precision > self.s_min_precision:        
             s += s_precision
             spline = UnivariateSpline(xs, ys, s=s)
-            corr = self.compute_spline_pearson_corr(xs, ys, spline)
-            clear_output(wait = True)
+            err = self.compute_spline_uncertainty(xs, ys, spline)
 
-            if corr < corr_thresh:
+            if err > corr_thresh:
                 s -= s_precision
                 s_precision /= 2
 
@@ -106,9 +96,9 @@ class SplineCompressor:
                 s_precision /= 2
         return s
     
-    def compute_spline_pearson_corr(self, xs, ys, spline):
+    def compute_spline_uncertainty(self, xs, ys, spline):
         """
-        Compute the Pearson correlation coefficient for the original ys and the ys computed using the provided spline.
+        Compute the uncertainty of the spline-reconstructed data against the original data's ys and the ys.
 
         Parameters:
         - xs (array-like): Independent variable data.
@@ -116,10 +106,11 @@ class SplineCompressor:
         - spline (UnivariateSpline): Spline function to be evaluated.
 
         Returns:
-        - float: Pearson correlation coefficient.
+        - float: Uncertainty measure.
         """
         spline_ys = spline(xs)
-        return pearsonr(ys, spline_ys)[0]
+        R = (spline_ys - ys)
+        return np.sqrt(np.std(R**2))
     
     def encode_spline(self, spline, metadata={}):
         """
@@ -248,7 +239,7 @@ class SplineCompressor:
 
         # Store the name of the independent variable and some run parameters in the metadata
         metadata['x_variable'] = independent_variable
-        metadata['pearson_corr_range_threshold'] = self.pearson_corr_range_threshold
+        metadata['max_error'] = self.max_error
         metadata['s_min_precision'] = self.s_min_precision
         
         # Normalize and scale the independent variable data
