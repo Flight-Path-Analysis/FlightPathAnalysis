@@ -75,10 +75,43 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="backend.html">backend package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="backend.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="backend.html#backend-compressors-module">backend.compressors module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="backend.html#backend-opensky-query-module">backend.opensky_query module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="backend.html#backend-utils-module">backend.utils module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="backend.html#module-contents">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-src.backend.compressors">backend.compressors module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="backend.html#src.backend.compressors.SplineCompressor"><code class="docutils literal notranslate"><span class="pre">SplineCompressor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.compressors.SplineCompressor.ScaledSpline"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.ScaledSpline</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.compressors.SplineCompressor.best_spline_s"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.best_spline_s()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.compressors.SplineCompressor.compute_compression_factor"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.compute_compression_factor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.compressors.SplineCompressor.compute_spline_pearson_corr"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.compute_spline_pearson_corr()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.compressors.SplineCompressor.decode_spline_single_column"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.decode_spline_single_column()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.compressors.SplineCompressor.encode_from_dataframe"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.encode_from_dataframe()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.compressors.SplineCompressor.encode_from_dataframe_to_file"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.encode_from_dataframe_to_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.compressors.SplineCompressor.encode_spline"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.encode_spline()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.compressors.SplineCompressor.optimize_and_encode_spline"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.optimize_and_encode_spline()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-src.backend.opensky_query">backend.opensky_query module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="backend.html#src.backend.opensky_query.Querier"><code class="docutils literal notranslate"><span class="pre">Querier</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.opensky_query.Querier.create_query_command_for_flight_data"><code class="docutils literal notranslate"><span class="pre">Querier.create_query_command_for_flight_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.opensky_query.Querier.create_query_command_for_state_vectors"><code class="docutils literal notranslate"><span class="pre">Querier.create_query_command_for_state_vectors()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.opensky_query.Querier.query_flight_data"><code class="docutils literal notranslate"><span class="pre">Querier.query_flight_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.opensky_query.Querier.query_state_vectors"><code class="docutils literal notranslate"><span class="pre">Querier.query_state_vectors()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-src.backend.utils">backend.utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="backend.html#src.backend.utils.Logger"><code class="docutils literal notranslate"><span class="pre">Logger</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.utils.Logger.clean_path"><code class="docutils literal notranslate"><span class="pre">Logger.clean_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#src.backend.utils.Logger.log"><code class="docutils literal notranslate"><span class="pre">Logger.log()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="backend.html#src.backend.utils.parse_to_dataframe"><code class="docutils literal notranslate"><span class="pre">parse_to_dataframe()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="backend.html#src.backend.utils.to_number"><code class="docutils literal notranslate"><span class="pre">to_number()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="backend.html#src.backend.utils.to_unix_timestamp"><code class="docutils literal notranslate"><span class="pre">to_unix_timestamp()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-src.backend">Module contents</a></li>
 </ul>
 </li>
 </ul>

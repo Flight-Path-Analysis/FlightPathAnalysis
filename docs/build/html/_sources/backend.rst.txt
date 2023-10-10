@@ -7,7 +7,7 @@ Submodules
 backend.compressors module
 --------------------------
 
-.. automodule:: backend.compressors
+.. automodule:: src.backend.compressors
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ backend.compressors module
 backend.opensky\_query module
 -----------------------------
 
-.. automodule:: backend.opensky_query
+.. automodule:: src.backend.opensky_query
    :members:
    :undoc-members:
    :show-inheritance:
@@ -23,7 +23,7 @@ backend.opensky\_query module
 backend.utils module
 --------------------
 
-.. automodule:: backend.utils
+.. automodule:: src.backend.utils
    :members:
    :undoc-members:
    :show-inheritance:
@@ -31,7 +31,7 @@ backend.utils module
 Module contents
 ---------------
 
-.. automodule:: backend
+.. automodule:: src.backend
    :members:
    :undoc-members:
    :show-inheritance:

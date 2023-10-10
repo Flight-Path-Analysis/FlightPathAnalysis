@@ -1,27 +1,27 @@
-backend package
-===============
+src.backend package
+===================
 
 Submodules
 ----------
 
-backend.compressors module
---------------------------
+src.backend.compressors module
+------------------------------
 
 .. automodule:: src.backend.compressors
    :members:
    :undoc-members:
    :show-inheritance:
 
-backend.opensky\_query module
------------------------------
+src.backend.opensky\_query module
+---------------------------------
 
 .. automodule:: src.backend.opensky_query
    :members:
    :undoc-members:
    :show-inheritance:
 
-backend.utils module
---------------------
+src.backend.utils module
+------------------------
 
 .. automodule:: src.backend.utils
    :members:

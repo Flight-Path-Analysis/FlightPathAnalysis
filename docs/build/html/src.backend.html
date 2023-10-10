@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>backend package &mdash; Flight Path Analysis  documentation</title>
+  <title>src.backend package &mdash; Flight Path Analysis  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -42,9 +42,9 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">backend package</a><ul>
+<li><a class="reference internal" href="#">src.backend package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-src.backend.compressors">backend.compressors module</a><ul>
+<li><a class="reference internal" href="#module-src.backend.compressors">src.backend.compressors module</a><ul>
 <li><a class="reference internal" href="#src.backend.compressors.SplineCompressor"><code class="docutils literal notranslate"><span class="pre">SplineCompressor</span></code></a><ul>
 <li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.ScaledSpline"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.ScaledSpline</span></code></a></li>
 <li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.best_spline_s"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.best_spline_s()</span></code></a></li>
@@ -59,7 +59,7 @@
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#module-src.backend.opensky_query">backend.opensky_query module</a><ul>
+<li><a class="reference internal" href="#module-src.backend.opensky_query">src.backend.opensky_query module</a><ul>
 <li><a class="reference internal" href="#src.backend.opensky_query.Querier"><code class="docutils literal notranslate"><span class="pre">Querier</span></code></a><ul>
 <li><a class="reference internal" href="#src.backend.opensky_query.Querier.create_query_command_for_flight_data"><code class="docutils literal notranslate"><span class="pre">Querier.create_query_command_for_flight_data()</span></code></a></li>
 <li><a class="reference internal" href="#src.backend.opensky_query.Querier.create_query_command_for_state_vectors"><code class="docutils literal notranslate"><span class="pre">Querier.create_query_command_for_state_vectors()</span></code></a></li>
@@ -69,7 +69,7 @@
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#module-src.backend.utils">backend.utils module</a><ul>
+<li><a class="reference internal" href="#module-src.backend.utils">src.backend.utils module</a><ul>
 <li><a class="reference internal" href="#src.backend.utils.Logger"><code class="docutils literal notranslate"><span class="pre">Logger</span></code></a><ul>
 <li><a class="reference internal" href="#src.backend.utils.Logger.clean_path"><code class="docutils literal notranslate"><span class="pre">Logger.clean_path()</span></code></a></li>
 <li><a class="reference internal" href="#src.backend.utils.Logger.log"><code class="docutils literal notranslate"><span class="pre">Logger.log()</span></code></a></li>
@@ -99,9 +99,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">backend package</li>
+      <li class="breadcrumb-item active">src.backend package</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/backend.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/src.backend.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -109,13 +109,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="backend-package">
-<h1>backend package<a class="headerlink" href="#backend-package" title="Link to this heading"></a></h1>
+  <section id="src-backend-package">
+<h1>src.backend package<a class="headerlink" href="#src-backend-package" title="Link to this heading"></a></h1>
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
 </section>
 <section id="module-src.backend.compressors">
-<span id="backend-compressors-module"></span><h2>backend.compressors module<a class="headerlink" href="#module-src.backend.compressors" title="Link to this heading"></a></h2>
+<span id="src-backend-compressors-module"></span><h2>src.backend.compressors module<a class="headerlink" href="#module-src.backend.compressors" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.backend.compressors.</span></span><span class="sig-name descname"><span class="pre">SplineCompressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor" title="Link to this definition"></a></dt>
@@ -264,7 +264,7 @@ The path of the file is determined using the ‘base-configs’ and ‘data-gath
 
 </section>
 <section id="module-src.backend.opensky_query">
-<span id="backend-opensky-query-module"></span><h2>backend.opensky_query module<a class="headerlink" href="#module-src.backend.opensky_query" title="Link to this heading"></a></h2>
+<span id="src-backend-opensky-query-module"></span><h2>src.backend.opensky_query module<a class="headerlink" href="#module-src.backend.opensky_query" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="src.backend.opensky_query.Querier">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.backend.opensky_query.</span></span><span class="sig-name descname"><span class="pre">Querier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.opensky_query.Querier" title="Link to this definition"></a></dt>
@@ -341,7 +341,7 @@ The path of the file is determined using the ‘base-configs’ and ‘data-gath
 
 </section>
 <section id="module-src.backend.utils">
-<span id="backend-utils-module"></span><h2>backend.utils module<a class="headerlink" href="#module-src.backend.utils" title="Link to this heading"></a></h2>
+<span id="src-backend-utils-module"></span><h2>src.backend.utils module<a class="headerlink" href="#module-src.backend.utils" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="src.backend.utils.Logger">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.backend.utils.</span></span><span class="sig-name descname"><span class="pre">Logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.utils.Logger" title="Link to this definition"></a></dt>
