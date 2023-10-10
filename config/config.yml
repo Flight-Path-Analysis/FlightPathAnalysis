@@ -3,9 +3,9 @@ base-configs:
     # Root directory of where the repo is located
     root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
     # Tag for current run for log files
-    tag: 'test'
+    tag: 'data_gather_test'
     # File containing the credentials for OpenSky database
-    opensky-credentials: 
+    opensky-credentials: 'config/opensky_login.yml'
     # FIle containing the credentials for the weather database
     weather-credentials:
 

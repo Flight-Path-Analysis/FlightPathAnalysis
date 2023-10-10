@@ -248,8 +248,8 @@ class SplineCompressor:
 
         # Store the name of the independent variable and some run parameters in the metadata
         metadata['x_variable'] = independent_variable
-        metadata['pearson_corr_range_threshold'] = self.pearson_corr_range_threshold
-        metadata['s_min_precision'] = self.s_min_precision
+        metadata['pearson_corr_range_threshold'] = float(self.pearson_corr_range_threshold)
+        metadata['s_min_precision'] = float(self.s_min_precision)
         
         # Normalize and scale the independent variable data
         original_xs = dataframe[independent_variable].values
@@ -284,10 +284,10 @@ class SplineCompressor:
 
             # Store min-max details in the metadata
             metadata[y_variable] = {
-                    'xmin': minX,
-                    'xmax': maxX,
-                    'ymin': minY,
-                    'ymax': maxY}
+                    'xmin': float(minX),
+                    'xmax': float(maxX),
+                    'ymin': float(minY),
+                    'ymax': float(maxY)}
 
             # Optimize and encode the spline, updating the metadata for the current dependent variable
             metadata[y_variable] = self.optimize_and_encode_spline(xs, ys, metadata=metadata[y_variable])
