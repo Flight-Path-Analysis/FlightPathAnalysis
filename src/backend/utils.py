@@ -83,7 +83,7 @@ def parse_to_dataframe(results):
         raise ValueError("Provided results is not in string format.")
     # Checks if input is an empty string
     if not results.strip():
-        raise ValueError("Provided results string is empty. Returning an empty DataFrame.")
+        raise ValueError("Provided results string is empty.")
 
     lines = results.split('\n')
     if len(lines) < 4:
@@ -168,7 +168,7 @@ def to_unix_timestamp(date_input):
     """
     
     # If it's already an integer or float, just convert to integer
-    if isinstance(date_input, (int, float)):
+    if isinstance(date_input, (int, float, np.int64, np.float64)):
         return int(date_input)
     
     # If it's a string, try to parse it

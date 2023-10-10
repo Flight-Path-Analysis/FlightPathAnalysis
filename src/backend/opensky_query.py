@@ -192,7 +192,6 @@ class Querier:
         - icao24 (str): ICAO 24-bit address of the aircraft.
         - start_time: Start time, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
         - end_time: End time, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
-        - logger (utils.Logger, optional): Logger instance for verbose logging. Defaults to None.
 
         Returns:
         - pd.DataFrame: DataFrame containing the state vectors results.
@@ -237,14 +236,14 @@ class Querier:
         # Closing client
         self.client.close()
         
-        # Continue querying until successful or all bad days are excluded
+        # Continue querying until successful or all bad hours are excluded
         while 'Disk I/O error' in errors:
             log_verbose("Bad hour found, trying again.")
             bad_hours += [eval(errors.split('\n')[3].split('hour=')[-1].split('/')[0])]
             bad_hours = sorted(bad_hours)
             log_verbose("Bad Hours:")
             for hour in bad_hours:
-                date_str = datetime.datetime.fromtimestamp(day).strftime('%Y-%m-%d')
+                date_str = datetime.datetime.fromtimestamp(hour).strftime('%Y-%m-%d')
                 log_verbose(f' - {date_str}')
             # Re-query
             self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
