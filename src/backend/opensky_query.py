@@ -1,6 +1,8 @@
 import paramiko
 import pandas as pd
-import utils
+import sys
+sys.path.append("../../")
+from src.backend import utils
 import datetime
 
 class Querier:

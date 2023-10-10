@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.backend package &mdash; Flight Path Analysis  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Flight Path Analysis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">src.backend package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-src.backend.compressors">src.backend.compressors module</a><ul>
+<li><a class="reference internal" href="#src.backend.compressors.SplineCompressor"><code class="docutils literal notranslate"><span class="pre">SplineCompressor</span></code></a><ul>
+<li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.ScaledSpline"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.ScaledSpline</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.best_spline_s"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.best_spline_s()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.compute_compression_factor"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.compute_compression_factor()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.compute_spline_pearson_corr"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.compute_spline_pearson_corr()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.decode_spline_single_column"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.decode_spline_single_column()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.encode_from_dataframe"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.encode_from_dataframe()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.encode_from_dataframe_to_file"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.encode_from_dataframe_to_file()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.encode_spline"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.encode_spline()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.compressors.SplineCompressor.optimize_and_encode_spline"><code class="docutils literal notranslate"><span class="pre">SplineCompressor.optimize_and_encode_spline()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.backend.opensky_query">src.backend.opensky_query module</a><ul>
+<li><a class="reference internal" href="#src.backend.opensky_query.Querier"><code class="docutils literal notranslate"><span class="pre">Querier</span></code></a><ul>
+<li><a class="reference internal" href="#src.backend.opensky_query.Querier.create_query_command_for_flight_data"><code class="docutils literal notranslate"><span class="pre">Querier.create_query_command_for_flight_data()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.opensky_query.Querier.create_query_command_for_state_vectors"><code class="docutils literal notranslate"><span class="pre">Querier.create_query_command_for_state_vectors()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.opensky_query.Querier.query_flight_data"><code class="docutils literal notranslate"><span class="pre">Querier.query_flight_data()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.opensky_query.Querier.query_state_vectors"><code class="docutils literal notranslate"><span class="pre">Querier.query_state_vectors()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.backend.utils">src.backend.utils module</a><ul>
+<li><a class="reference internal" href="#src.backend.utils.Logger"><code class="docutils literal notranslate"><span class="pre">Logger</span></code></a><ul>
+<li><a class="reference internal" href="#src.backend.utils.Logger.clean_path"><code class="docutils literal notranslate"><span class="pre">Logger.clean_path()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.utils.Logger.log"><code class="docutils literal notranslate"><span class="pre">Logger.log()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.backend.utils.parse_to_dataframe"><code class="docutils literal notranslate"><span class="pre">parse_to_dataframe()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.utils.to_number"><code class="docutils literal notranslate"><span class="pre">to_number()</span></code></a></li>
+<li><a class="reference internal" href="#src.backend.utils.to_unix_timestamp"><code class="docutils literal notranslate"><span class="pre">to_unix_timestamp()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.backend">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Flight Path Analysis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">src.backend package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/src.backend.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="src-backend-package">
+<h1>src.backend package<a class="headerlink" href="#src-backend-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-src.backend.compressors">
+<span id="src-backend-compressors-module"></span><h2>src.backend.compressors module<a class="headerlink" href="#module-src.backend.compressors" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.backend.compressors.</span></span><span class="sig-name descname"><span class="pre">SplineCompressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>SplineCompressor offers utilities to compress and encode data using B-splines.</p>
+<p>It provides methods to determine the optimal smoothing factor for splines,
+compute Pearson correlation coefficients for the original data and the spline-reconstructed data,
+and encode and decode splines for more compact storage or transmission.</p>
+<p>Attributes:
+- pearson_corr_range_threshold (float): Threshold for acceptable range of Pearson correlation.
+- s_min_precision (float): Minimum acceptable precision for the smoothing factor ‘s’.
+- s_base_precision (float): Starting precision for the smoothing factor ‘s’.
+- logger (utils.Logger, optional): Logging utility.</p>
+<p>Methods:
+- best_spline_s(xs, ys): Determine optimal ‘s’ for a UnivariateSpline.
+- compute_spline_pearson_corr(xs, ys, spline): Compute Pearson correlation between original and spline data.
+- encode_spline(spline, metadata={}): Convert spline to metadata dictionary.
+- optimize_and_encode_spline(xs, ys, metadata={}): Optimize spline and convert to metadata.
+- compute_compression_factor(xs, ys, metadata): Compute compression factor of encoding.
+- decode_spline(metadata): Decode a BSpline from metadata.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor.ScaledSpline">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ScaledSpline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_max</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor.ScaledSpline" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>ScaledSpline wraps around a BSpline object to provide scaling and descaling functionalities.
+Parameters:
+- spline (BSpline): The spline object.
+- x_min (float): Minimum x-value of the original data.
+- x_max (float): Maximum x-value of the original data.
+- y_min (float): Minimum y-value of the original data.
+- y_max (float): Maximum y-value of the original data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor.best_spline_s">
+<span class="sig-name descname"><span class="pre">best_spline_s</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ys</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor.best_spline_s" title="Link to this definition"></a></dt>
+<dd><p>Determine the best smoothing factor ‘s’ for a UnivariateSpline that achieves a desired Pearson correlation
+while attempting to minimize the number of spline coefficients and knots.</p>
+<p>Parameters:
+- xs : array-like</p>
+<blockquote>
+<div><p>Independent variable data.</p>
+</div></blockquote>
+<ul class="simple">
+<li><dl class="simple">
+<dt>ys<span class="classifier">array-like</span></dt><dd><p>Dependent variable data corresponding to ‘xs’.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Returns:
+- float</p>
+<blockquote>
+<div><p>The determined optimal smoothing factor ‘s’.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor.compute_compression_factor">
+<span class="sig-name descname"><span class="pre">compute_compression_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor.compute_compression_factor" title="Link to this definition"></a></dt>
+<dd><p>Compute the compression factor achieved by encoding xs and ys into the given metadata.</p>
+<p>Parameters:
+- xs (array-like): Original independent variable data.
+- ys (array-like): Original dependent variable data.
+- metadata (dict): Encoded metadata representation of xs and ys.</p>
+<p>Returns:
+- float: Compression factor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor.compute_spline_pearson_corr">
+<span class="sig-name descname"><span class="pre">compute_spline_pearson_corr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spline</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor.compute_spline_pearson_corr" title="Link to this definition"></a></dt>
+<dd><p>Compute the Pearson correlation coefficient for the original ys and the ys computed using the provided spline.</p>
+<p>Parameters:
+- xs (array-like): Independent variable data.
+- ys (array-like): Original dependent variable data.
+- spline (UnivariateSpline): Spline function to be evaluated.</p>
+<p>Returns:
+- float: Pearson correlation coefficient.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor.decode_spline_single_column">
+<span class="sig-name descname"><span class="pre">decode_spline_single_column</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor.decode_spline_single_column" title="Link to this definition"></a></dt>
+<dd><p>Decode a BSpline from given metadata and return a function that outputs values in the original range.</p>
+<p>Parameters:
+- metadata (dict): Metadata containing encoded spline info for the column.</p>
+<p>Returns:
+- function: A function that takes scaled x-values and returns y-values in the original range.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor.encode_from_dataframe">
+<span class="sig-name descname"><span class="pre">encode_from_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">independent_variable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent_variable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor.encode_from_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Encode data from a dataframe based on the provided independent and dependent variables.</p>
+<p>Parameters:
+- dataframe (pd.DataFrame): The data source.
+- independent_variable (str): Column name for the independent variable.
+- dependent_variable (str/list[str]): Column name(s) for the dependent variable(s).
+- metadata (dict, optional): Any additional metadata to include. Default is an empty dict.</p>
+<p>Returns:
+- ScaledSpline: An instance of the ScaledSpline class.</p>
+<p>Raises:
+- ValueError: If the types of provided independent or dependent variables are not as expected.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor.encode_from_dataframe_to_file">
+<span class="sig-name descname"><span class="pre">encode_from_dataframe_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">independent_variable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependent_variable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor.encode_from_dataframe_to_file" title="Link to this definition"></a></dt>
+<dd><p>Encode the data from a dataframe into a metadata dictionary based on the provided independent and dependent variables,
+and then save the metadata to a YAML file.</p>
+<p>Parameters:
+- dataframe (pd.DataFrame): The data source.
+- independent_variable (str): Column name for the independent variable.
+- dependent_variable (str/list[str]): Column name(s) for the dependent variable(s).
+- filename (str, optional): Name of the output file to save the metadata. If not provided, it will be determined from the metadata.
+- metadata (dict, optional): Any additional metadata to include. Default is an empty dict.</p>
+<p>The method uses the <cite>flight_id</cite> from the metadata to determine the filename if not provided.
+The path of the file is determined using the ‘base-configs’ and ‘data-gather’ configurations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor.encode_spline">
+<span class="sig-name descname"><span class="pre">encode_spline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor.encode_spline" title="Link to this definition"></a></dt>
+<dd><p>Convert a spline function into a metadata dictionary for easier storage or transmission.</p>
+<p>Parameters:
+- spline (UnivariateSpline): The spline to encode.
+- metadata (dict, optional): Any additional metadata to include.</p>
+<p>Returns:
+- dict: Metadata representing the spline.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.compressors.SplineCompressor.optimize_and_encode_spline">
+<span class="sig-name descname"><span class="pre">optimize_and_encode_spline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.compressors.SplineCompressor.optimize_and_encode_spline" title="Link to this definition"></a></dt>
+<dd><p>Optimize the spline based on xs and ys, then encode the spline into metadata.</p>
+<p>Parameters:
+- xs (array-like): Independent variable data.
+- ys (array-like): Dependent variable data corresponding to ‘xs’.
+- metadata (dict): Dictionary to populate with encoded spline data.</p>
+<p>Returns:
+- dict: Metadata dictionary containing encoded spline and other info.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-src.backend.opensky_query">
+<span id="src-backend-opensky-query-module"></span><h2>src.backend.opensky_query module<a class="headerlink" href="#module-src.backend.opensky_query" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.backend.opensky_query.Querier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.backend.opensky_query.</span></span><span class="sig-name descname"><span class="pre">Querier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.opensky_query.Querier" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class to facilitate querying of the OpenSky database using SSH.</p>
+<p>Attributes:
+- __username (str): Private attribute to store the username.
+- __password (str): Private attribute to store the password.
+- hostname (str): Hostname for the SSH connection.
+- port (int): Port number for the SSH connection.
+- client (paramiko.SSHClient): An SSH client instance to manage SSH connections.
+- logger (utils.Logger): The Logger class instance to log text outputs</p>
+<p>Methods:
+- create_query_command_for_flight_data: Generates the SQL query for flight data.
+- create_query_command_for_state_vectors: Generates the SQL query for state vectors.
+- query_flight_data: Executes the query and returns the results as a DataFrame.
+- query_state_vectors: Executes the query and returns the results as a DataFrame.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.opensky_query.Querier.create_query_command_for_flight_data">
+<span class="sig-name descname"><span class="pre">create_query_command_for_flight_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">departure_airport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrival_airport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date_unix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date_unix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bad_days</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.opensky_query.Querier.create_query_command_for_flight_data" title="Link to this definition"></a></dt>
+<dd><p>Generate the SQL query command for querying flight data from the OpenSky database.</p>
+<p>Parameters:
+- departure_airport (str): ICAO code of the departure airport.
+- arrival_airport (str): ICAO code of the arrival airport.
+- start_date_unix (int): Start date in UNIX timestamp format.
+- end_date_unix (int): End date in UNIX timestamp format.
+- bad_days (list): List of UNIX timestamps for days to exclude from the query.
+- limit (int, optional): Maximum number of records to retrieve.</p>
+<p>Returns:
+- str: SQL query command.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.opensky_query.Querier.create_query_command_for_state_vectors">
+<span class="sig-name descname"><span class="pre">create_query_command_for_state_vectors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">icao24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time_unix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time_unix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bad_hours</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.opensky_query.Querier.create_query_command_for_state_vectors" title="Link to this definition"></a></dt>
+<dd><p>Generate the SQL query command for querying state vectors data from the OpenSky database.</p>
+<p>Parameters:
+- icao24 (str): ICAO 24-bit address of the aircraft.
+- start_time_unix (int): Start time in UNIX timestamp format.
+- end_time_unix (int): End time in UNIX timestamp format.
+- bad_hours (list): List of UNIX timestamps for hours to exclude from the query.
+- limit (int, optional): Maximum number of records to retrieve.</p>
+<p>Returns:
+- str: SQL query command.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.opensky_query.Querier.query_flight_data">
+<span class="sig-name descname"><span class="pre">query_flight_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">departure_airport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrival_airport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.opensky_query.Querier.query_flight_data" title="Link to this definition"></a></dt>
+<dd><p>Query flight data from the OpenSky database using the provided client.</p>
+<p>Parameters:
+- departure_airport (str): ICAO code of the departure airport.
+- arrival_airport (str): ICAO code of the arrival airport.
+- start_date: Start date, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
+- end_date: Start date, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.</p>
+<p>Returns:
+- pd.DataFrame: DataFrame containing the flight data results.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.opensky_query.Querier.query_state_vectors">
+<span class="sig-name descname"><span class="pre">query_state_vectors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">icao24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.opensky_query.Querier.query_state_vectors" title="Link to this definition"></a></dt>
+<dd><p>Query state vectors data from the OpenSky database for a specific aircraft.</p>
+<p>Parameters:
+- icao24 (str): ICAO 24-bit address of the aircraft.
+- start_time: Start time, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
+- end_time: End time, can be a date string, datetime.datetime object, UNIX integer or string, or datetime.date object.
+- logger (utils.Logger, optional): Logger instance for verbose logging. Defaults to None.</p>
+<p>Returns:
+- pd.DataFrame: DataFrame containing the state vectors results.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-src.backend.utils">
+<span id="src-backend-utils-module"></span><h2>src.backend.utils module<a class="headerlink" href="#module-src.backend.utils" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.backend.utils.Logger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.backend.utils.</span></span><span class="sig-name descname"><span class="pre">Logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.utils.Logger" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.utils.Logger.clean_path">
+<span class="sig-name descname"><span class="pre">clean_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.utils.Logger.clean_path" title="Link to this definition"></a></dt>
+<dd><p>Ensure the provided path string ends with a ‘/’.</p>
+<p>Parameters:
+- path (str): A directory path.</p>
+<p>Returns:
+- str: Path with a trailing ‘/’ if it was missing.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.backend.utils.Logger.log">
+<span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.utils.Logger.log" title="Link to this definition"></a></dt>
+<dd><p>Log the provided text with a timestamp to the specified log file.</p>
+<p>Parameters:
+- text (str): Text message to be logged.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.backend.utils.parse_to_dataframe">
+<span class="sig-prename descclassname"><span class="pre">src.backend.utils.</span></span><span class="sig-name descname"><span class="pre">parse_to_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.utils.parse_to_dataframe" title="Link to this definition"></a></dt>
+<dd><blockquote>
+<div><p>Parse the text results of a database query to a pandas DataFrame.</p>
+<p>This function processes the provided query results, which is expected to be in a 
+delimited text format. The results are parsed and converted to a pandas DataFrame 
+where each column corresponds to a field in the query results and rows correspond to 
+individual records. If a value in the results can be converted to a number using the 
+<cite>to_number</cite> function, it will be. If an empty string is provided, an empty DataFrame
+is returned.</p>
+<p>Parameters:
+- results (str): A string containing the results of a database query. The results should</p>
+<blockquote>
+<div><p>be delimited, typically by ‘|’ and organized into rows separated by newlines.</p>
+</div></blockquote>
+<p>Returns:
+- pd.DataFrame: A DataFrame representation of the parsed query results.</p>
+<p>Warnings:
+- If the input results string is empty, a warning is issued and an empty DataFrame is returned.</p>
+<p>Example:
+- Input:     +———-+——–+————+————+———————+——————-+</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |</div>
+</div>
+</div></blockquote>
+<table class="docutils align-default">
+<tbody>
+</tbody>
+</table>
+<blockquote>
+<div><div class="line-block">
+<div class="line">SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |</div>
+</div>
+</div></blockquote>
+<table class="docutils align-default">
+<tbody>
+</tbody>
+</table>
+</div></blockquote>
+<ul>
+<li><dl>
+<dt>Output:</dt><dd><blockquote>
+<div><p>callsign  icao24   firstseen    lastseen    estdepartureairport  estarrivalairport</p>
+</div></blockquote>
+<p>0  DAL1199   a0a6c5   1688674458   1688676085  KBTR                 NULL</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.backend.utils.to_number">
+<span class="sig-prename descclassname"><span class="pre">src.backend.utils.</span></span><span class="sig-name descname"><span class="pre">to_number</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.utils.to_number" title="Link to this definition"></a></dt>
+<dd><p>Convert a given input to a number if possible.</p>
+<p>This function attempts to convert the provided input to an integer or 
+floating-point number. If the conversion is not possible, it returns 
+the input as-is.</p>
+<p>Parameters:
+- s: The input to be converted. Can be of any type, but typically expected to be a string.</p>
+<p>Returns:
+- int or float or same type as input: If <cite>s</cite> can be converted to an integer or floating-point number,</p>
+<blockquote>
+<div><p>the converted number is returned. Otherwise, the original input is returned.</p>
+</div></blockquote>
+<p>Examples:
+&gt;&gt;&gt; to_number(“45”)
+45</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">to_number</span><span class="p">(</span><span class="s2">&quot;3.14&quot;</span><span class="p">)</span>
+<span class="go">3.14</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">to_number</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
+<span class="go">&#39;hello&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.backend.utils.to_unix_timestamp">
+<span class="sig-prename descclassname"><span class="pre">src.backend.utils.</span></span><span class="sig-name descname"><span class="pre">to_unix_timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date_input</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.backend.utils.to_unix_timestamp" title="Link to this definition"></a></dt>
+<dd><p>Convert a given date input to its corresponding UNIX timestamp.</p>
+<p>This function accepts various date input formats including strings 
+representing dates or UNIX timestamps, date objects, datetime objects, 
+and integer or float representations of UNIX timestamps. It then converts 
+and returns the corresponding UNIX timestamp as an integer.
+It assumes date inputs as being in the UTC timezone</p>
+<p>Parameters:
+- date_input: The date input to be converted. Can be a string containing a date in</p>
+<blockquote>
+<div><p>various formats (e.g., ‘YYYY-MM-DD’, ‘YYYY-MM-DD HH:MM:SS’) or a UNIX 
+timestamp, a date object, a datetime object, or a number (int or float) 
+representing a UNIX timestamp.</p>
+</div></blockquote>
+<p>Returns:
+- int: The UNIX timestamp corresponding to the given date input.</p>
+<p>Raises:
+- ValueError: If the date input format is unsupported.</p>
+<p>Examples:
+&gt;&gt;&gt; to_unix_timestamp(“2022-01-01”)
+1641016800</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">to_unix_timestamp</span><span class="p">(</span><span class="s2">&quot;1641016800&quot;</span><span class="p">)</span>
+<span class="go">1641016800</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">to_unix_timestamp</span><span class="p">(</span><span class="mi">1641016800</span><span class="p">)</span>
+<span class="go">1641016800</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">to_unix_timestamp</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2022</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="go">1641016800</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">to_unix_timestamp</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2022</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="go">1641016800</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+<section id="module-src.backend">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-src.backend" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Andre Guimaraes.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
