@@ -4,7 +4,9 @@ from scipy.interpolate import BSpline
 from scipy.stats import pearsonr
 from IPython.display import clear_output
 from pympler import asizeof
-import utils
+import sys
+sys.path.append("../../")
+from src.backend import utils
 import yaml
 
 class SplineCompressor:
