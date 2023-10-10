@@ -7,7 +7,7 @@ asttokens==2.4.0
 async-lru==2.0.4
 attrs==23.1.0
 Babel==2.12.1
-backcall==0.2.0
+backcall @ file:///home/ktietz/src/ci/backcall_1611930011877/work
 bcrypt==4.0.1
 beautifulsoup4==4.12.2
 bleach==6.0.0
@@ -16,15 +16,15 @@ Brotli==1.0.9
 certifi==2023.7.22
 cffi==1.15.1
 charset-normalizer==3.2.0
-comm==0.1.4
+comm @ file:///Users/ec2-user/ci_py311/comm_1678317779525/work
 configparser==6.0.0
 contourpy==1.1.1
 cryptography==41.0.3
 cycler==0.12.1
-debugpy==1.8.0
-decorator==5.1.1
+debugpy @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_30hp2nowkm/croot/debugpy_1690905056188/work
+decorator @ file:///opt/conda/conda-bld/decorator_1643638310831/work
 defusedxml==0.7.1
-executing==2.0.0
+executing @ file:///opt/conda/conda-bld/executing_1646925071911/work
 fastjsonschema==2.18.0
 FlightRadarAPI==1.3.10
 fonttools==4.43.1
@@ -32,10 +32,10 @@ fqdn==1.5.1
 html5lib==1.1
 idna==3.4
 iniconfig==2.0.0
-ipykernel==6.25.2
-ipython==8.16.1
+ipykernel @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_03247w06su/croot/ipykernel_1691121639959/work
+ipython @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_05skbxaflp/croot/ipython_1694181365614/work
 isoduration==20.11.0
-jedi==0.19.1
+jedi @ file:///Users/ec2-user/ci_py311_2/jedi_1679336327335/work
 Jinja2==3.1.2
 json5==0.9.14
 jsonpath-rw==1.4.0
@@ -44,7 +44,7 @@ jsonschema==4.19.0
 jsonschema-specifications==2023.7.1
 jupyter-events==0.7.0
 jupyter-lsp==2.2.0
-jupyter_client==8.3.1
+jupyter_client @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_5e4bbpqn9e/croot/jupyter_client_1680171866753/work
 jupyter_core==5.3.2
 jupyter_server==2.7.3
 jupyter_server_terminals==0.4.4
@@ -55,13 +55,13 @@ kiwisolver==1.4.5
 lxml==4.9.3
 MarkupSafe==2.1.3
 matplotlib==3.8.0
-matplotlib-inline==0.1.6
+matplotlib-inline @ file:///Users/ec2-user/ci_py311/matplotlib-inline_1678317544666/work
 metar==1.11.0
 mistune==3.0.1
 nbclient==0.8.0
 nbconvert==7.8.0
 nbformat==5.9.2
-nest-asyncio==1.5.8
+nest-asyncio @ file:///Users/ec2-user/ci_py311/nest-asyncio_1678316288195/work
 notebook_shim==0.2.3
 numpy==1.26.0
 overrides==7.4.0
@@ -69,31 +69,31 @@ packaging==23.2
 pandas==2.1.1
 pandocfilters==1.5.0
 paramiko==3.3.1
-parso==0.8.3
-pexpect==4.8.0
-pickleshare==0.7.5
+parso @ file:///opt/conda/conda-bld/parso_1641458642106/work
+pexpect @ file:///tmp/build/80754af9/pexpect_1605563209008/work
+pickleshare @ file:///tmp/build/80754af9/pickleshare_1606932040724/work
 Pillow==10.0.1
-platformdirs==3.11.0
+platformdirs @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_640usff2p5/croot/platformdirs_1692205656061/work
 pluggy==1.3.0
 ply==3.11
 prometheus-client==0.17.1
-prompt-toolkit==3.0.39
-psutil==5.9.5
-ptyprocess==0.7.0
-pure-eval==0.2.2
+prompt-toolkit @ file:///Users/ec2-user/ci_py311/prompt-toolkit_1678317707969/work
+psutil @ file:///Users/ec2-user/ci_py311_2/psutil_1679337242143/work
+ptyprocess @ file:///tmp/build/80754af9/ptyprocess_1609355006118/work/dist/ptyprocess-0.7.0-py2.py3-none-any.whl
+pure-eval @ file:///opt/conda/conda-bld/pure_eval_1646925070566/work
 pycparser==2.21
 pyflightdata==0.8.6.2
-Pygments==2.16.1
+Pygments @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_cflayrfqsi/croot/pygments_1684279981084/work
 Pympler==1.0.1
 PyNaCl==1.5.0
 pyparsing==3.1.1
 pytest==7.4.2
-python-dateutil==2.8.2
+python-dateutil @ file:///tmp/build/80754af9/python-dateutil_1626374649649/work
 python-decouple==3.8
 python-json-logger==2.0.7
 pytz==2023.3.post1
 PyYAML==6.0.1
-pyzmq==25.1.1
+pyzmq @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_e6wiufh44w/croot/pyzmq_1686601381524/work
 referencing==0.30.2
 requests==2.31.0
 rfc3339-validator==0.1.4
@@ -102,18 +102,18 @@ rpds-py==0.10.2
 scipy==1.11.3
 Send2Trash==1.8.2
 simplification==0.6.11
-six==1.16.0
+six @ file:///tmp/build/80754af9/six_1644875935023/work
 sniffio==1.3.0
 soupsieve==2.5
-stack-data==0.6.3
+stack-data @ file:///opt/conda/conda-bld/stack_data_1646927590127/work
 terminado==0.17.1
 tinycss2==1.2.1
-tornado==6.3.3
-traitlets==5.11.2
+tornado @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_aeotsmw12l/croot/tornado_1690848274212/work
+traitlets @ file:///Users/ec2-user/ci_py311/traitlets_1678316097905/work
 tzdata==2023.3
 uri-template==1.3.0
 urllib3==2.0.4
-wcwidth==0.2.8
+wcwidth @ file:///Users/ktietz/demo/mc3/conda-bld/wcwidth_1629357192024/work
 webcolors==1.13
 webencodings==0.5.1
 websocket-client==1.6.2
