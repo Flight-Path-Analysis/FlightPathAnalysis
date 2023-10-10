@@ -1,6 +1,6 @@
 import paramiko
 import pandas as pd
-import utils
+from src.backend import utils
 import datetime
 
 class Querier:
@@ -68,7 +68,7 @@ class Querier:
     AND day <= {end_date_unix}
     """
         # Add conditions to exclude bad days
-        for day in bad_days:
+        for day in sorted(bad_days):
             query += f'AND day != {day}\n'
 
         # Add ordering and limit if specified
@@ -144,7 +144,7 @@ class Querier:
         
         # Connecting to client
         self.client.connect(self.hostname, port=self.port, username=self.__username, password=self.__password)
-        
+            
         # Building the query
         query = self.create_query_command_for_flight_data(departure_airport, arrival_airport, start_date_unix, end_date_unix, bad_days)
            
@@ -180,7 +180,6 @@ class Querier:
             self.client.close()
             
         # Convert the result to a DataFrame and return
-
         return utils.parse_to_dataframe(results)
     
     def query_state_vectors(self, icao24, start_time, end_time):
@@ -256,3 +255,5 @@ class Querier:
             self.client.close()
         
         return utils.parse_to_dataframe(results)
+    
+    
