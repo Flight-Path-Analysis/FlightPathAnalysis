@@ -97,7 +97,7 @@ def parse_to_dataframe(results):
        (len(last_line.replace('+','').replace('-','')) != 0):
         raise ValueError("Invalid input, first, third, and last line is expected to contain nothing but \"+\" and \"-\"")
         
-    if not columns_line.startswith(' |') or not columns_line.endswith('|'):
+    if not columns_line.startswith('|') or not columns_line.endswith('|'):
         raise ValueError(f"Column lines should start with \" |\" and end with \"|\". {columns_line}")
         
     # Extract column names
@@ -111,7 +111,7 @@ def parse_to_dataframe(results):
     for i, line in enumerate(data_lines):
         if line.count('|') != n_cols + 1:
             raise ValueError(f"Invalid input, data line {i} does not agree with columns format\n{line}")
-        if not line.startswith(' |') or not line.endswith('|'):
+        if not line.startswith('|') or not line.endswith('|'):
             raise ValueError(f"Data lines should start with \" |\" and end with \"|\". {i}, {line}")
     
     # Clean up lines and split them

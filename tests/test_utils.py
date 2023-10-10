@@ -35,9 +35,9 @@ def test_parse_to_dataframe():
     
     input_good_1 = """\
 +----------+--------+------------+------------+---------------------+-------------------+
- | callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
+| callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
 +----------+--------+------------+------------+---------------------+-------------------+
- | SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |
+| SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |
 +----------+--------+------------+------------+---------------------+-------------------+\
 """
     
@@ -53,7 +53,7 @@ def test_parse_to_dataframe():
     # Sample input for good_case_1, no data result
     input_good_2 = """\
 +----------+--------+------------+------------+---------------------+-------------------+
- | callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
+| callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
 +----------+--------+------------+------------+---------------------+-------------------+
 +----------+--------+------------+------------+---------------------+-------------------+\
 """
@@ -88,11 +88,11 @@ def test_parse_to_dataframe():
     
     input_bad_4 = """\
 +----------+--------+------------+------------+---------------------+-------------------+
- | callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
+| callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
 +----------+--------+------------+------------+---------------------+-------------------+
- | SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |
- | SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |
- | SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |\
+| SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |
+| SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |
+| SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |\
 """
     
     output_bad_4 = pytest.raises(ValueError, match=re.escape("Invalid input, first, third, and last line is expected to contain nothing but \"+\" and \"-\""))
@@ -101,26 +101,13 @@ def test_parse_to_dataframe():
     
     input_bad_5 = """\
 +----------+--------+------------+------------+---------------------+-------------------+
- | callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
+| callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
 +----------+--------+------------+------------+---------------------+-------------------+
- | SKW5466  | 1676665124 | 1676667470 | KBTR                | NULL              |
+| SKW5466  | 1676665124 | 1676667470 | KBTR                | NULL              |
 +----------+--------+------------+------------+---------------------+-------------------+\
 """
     
-    output_bad_5 = pytest.raises(ValueError, match=re.escape(f"Invalid input, data line 0 does not agree with columns format\n | SKW5466  | 1676665124 | 1676667470 | KBTR                | NULL              |"))
-    
-    # Testing for bad_case_6, bad data row
-    
-    input_bad_6 = """\
-+----------+--------+------------+------------+---------------------+-------------------+
- | callsign | icao24 | firstseen  | lastseen   | estdepartureairport | estarrivalairport |
-+----------+--------+------------+------------+---------------------+-------------------+
-| SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |
-+----------+--------+------------+------------+---------------------+-------------------+\
-"""
-    
-    output_bad_6 = pytest.raises(ValueError, match=re.escape(f"Data lines should start with \" |\" and end with \"|\". 0, | SKW5466  | aced8f | 1676665124 | 1676667470 | KBTR                | NULL              |"))
-    
+    output_bad_5 = pytest.raises(ValueError, match=re.escape(f"Invalid input, data line 0 does not agree with columns format\n| SKW5466  | 1676665124 | 1676667470 | KBTR                | NULL              |"))
     
     # ----------------Testing Good and Bad Cases---------------- #
     
@@ -159,10 +146,6 @@ def test_parse_to_dataframe():
     # Testing for input_bad_5, bad data
     with output_bad_5:
         parse_to_dataframe(input_bad_5)
-        
-    # Testing for input_bad_6, bad data row
-    with output_bad_6:
-        parse_to_dataframe(input_bad_6)
         
     
 def test_to_unix_timestamp():
