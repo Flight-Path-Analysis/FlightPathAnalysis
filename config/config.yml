@@ -4,6 +4,10 @@ base-configs:
     root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
     # Tag for current run for log files
     tag: 'test'
+    # File containing the credentials for OpenSky database
+    opensky-credentials: 
+    # FIle containing the credentials for the weather database
+    weather-credentials:
 
 # All configurations for gathering data
 data-gather:
