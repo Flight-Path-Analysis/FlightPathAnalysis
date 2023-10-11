@@ -67,7 +67,3 @@ For any queries or feedback, you can contact me through GitHub or drop an email 
 
 - **Erdös Institute**: For hosting the Data Science Bootcamp where this project was conceptualized.
 - **OpenSky**: For providing access to their comprehensive flight database.
-
----
-
-You can further customize and enhance this `README.md` as your project evolves. Remember to update links (like the ones to the data or the contribution guidelines) as soon as they're available.

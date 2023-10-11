@@ -29,13 +29,18 @@ data-gather:
         # Ending date of flights of interest
         end-date: '2021-01-01'
 
+# All configurations for data compression
 data-compression:
+    # Configurations defining the spline-compression algorithm
     spline-compressor:
-        pearson_corr_range_threshold: 0.9
-        s_minimum_precision: 0.01
-        s_base_precision: 10000000000000000
+        # The Maximum alowed percentage error between the data and the interpolation
+        max-error: 0.001
+        # Smallest precision step to which narrow down s
+        s-minimum-precision: 0.001
+        # Initial precisionf step of s, must be large
+        s-base-precision: 10000000000000000
         
-  
+# All configurations for logging messages
 log:
     # Directory where log files are located from the root directory
     log-directory: 'logs/'
