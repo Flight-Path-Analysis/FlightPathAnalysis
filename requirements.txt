@@ -36,7 +36,7 @@ Jinja2==3.1.2
 json5==0.9.14
 jsonpath-rw==1.4.0
 jsonpointer==2.4
-jsonschema==4.19.0
+jsonschema==4.19.1
 jsonschema-specifications==2023.7.1
 jupyter-events==0.7.0
 jupyter-lsp==2.2.0
