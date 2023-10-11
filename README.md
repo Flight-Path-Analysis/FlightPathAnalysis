@@ -53,11 +53,14 @@ We welcome contributions to the Flight Path Analysis project! Here are some gene
 - Make sure your code lints (use tools like `flake8` or `pylint`).
 - Issue that pull request!
 
-Feel free to check [Contribution Guidelines](LINK_TO_CONTRIBUTING.md) for more details (if available).
+Feel free to check [Contribution Guidelines](https://github.com/Andrerg01/FlightPathAnalysis/blob/main/docs/CONTRIBUTING.md) for more details (if available).
+
+The files pertaining to the [Code of Conduct](https://github.com/Andrerg01/FlightPathAnalysis/blob/main/docs/CODE_OF_CONDUCT.md), [License](https://github.com/Andrerg01/FlightPathAnalysis/blob/main/docs/LICENSE), [Contribution Guidelines](https://github.com/Andrerg01/FlightPathAnalysis/blob/main/docs/CONTRIBUTING.md), and [Security](https://github.com/Andrerg01/FlightPathAnalysis/blob/main/docs/SECURITY.md) can all be found inside the repo's [docs](https://github.com/Andrerg01/FlightPathAnalysis/tree/main/docs) directory.
 
 ## License
 
-This project is not currently licensed.
+Flight Path Analysis © 2023 by Andre Guimaraes is licensed under CC BY-NC-SA 4.0.
+To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/
 
 ## Contact
 
