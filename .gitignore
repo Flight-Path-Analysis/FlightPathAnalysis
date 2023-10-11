@@ -9,6 +9,7 @@ node_modules/
 Thumbs.db
 prototyping/**/*.*
 !prototyping/**/
+!prototyping/prototyping.ipynb
 data/**/*.*
 !data/**
 **/.ipynb_checkpoints
