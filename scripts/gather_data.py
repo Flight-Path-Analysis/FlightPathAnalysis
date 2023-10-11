@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import datetime
 import yaml
 import pandas as pd
@@ -19,7 +19,7 @@ with open(f'{root_path}/config/config.yml', 'r') as file:
         config = yaml.safe_load(file)
     except yaml.YAMLError as exc:
         print(exc)
-        
+
 # Checking for and loading opensky credentials file.
 credentials_file = config['base-configs']['opensky-credentials']
 if not credentials_file:
@@ -30,16 +30,16 @@ with open(f'{root_path}/{credentials_file}', 'r') as file:
         credentials = yaml.safe_load(file)
     except yaml.YAMLError as exc:
         print(exc)
-        
+
 # Defining Logger
 logger = utils.Logger(config)
 
 # Creates an instane of the Querier class used for querying the opensky database
 opensky_querier = opensky_query.Querier(
-    credentials['username'], 
+    credentials['username'],
     credentials['password'],
-    config['data-gather']['flights']['hostname'], 
-    config['data-gather']['flights']['port'], 
+    config['data-gather']['flights']['hostname'],
+    config['data-gather']['flights']['port'],
     logger = logger)
 
 # Creates an instance of the SplineCompressor class.
@@ -54,19 +54,33 @@ for airport_route in config['data-gather']['flights']['routes-of-interest']:
     origin_airport = airport_route[0]
     destination_airport = airport_route[1]
     flights = opensky_querier.query_flight_data(
-          origin_airport, 
-          destination_airport, 
-          start_date, 
+          origin_airport,
+          destination_airport,
+          start_date,
           end_date)
     
     for i, flight in flights.iterrows():
-        flight_id = f"{flight['icao24']}_{flight['firstseen']}_{flight['lastseen']}_{flight['estdepartureairport']}_{flight['estarrivalairport']}"
+        icao24 = flight['icao24']
+        firstseen = flight['firstseen']
+        lastseen = flight['lastseen']
+        estdepartureairport = flight['estdepartureairport']
+        estarrivalairport = flight['estarrivalairport']
+        flight_id = f"{icao24}_{firstseen}_{lastseen}_\
+        {estdepartureairport}_{estarrivalairport}"
+        
         state_vectors = opensky_querier.query_state_vectors(
-                        flight['icao24'],
-                        flight['firstseen'],
-                        flight['lastseen'])
+                        icao24,
+                        firstseen,
+                        lastseen)
         # Cleaning Data
-        cols_to_check = ['time', 'lat', 'lon', 'velocity', 'heading', 'baroaltitude', 'geoaltitude', 'hour']
+        cols_to_check = ['time',
+                         'lat',
+                         'lon',
+                         'velocity',
+                         'heading',
+                         'baroaltitude',
+                         'geoaltitude',
+                         'hour']
         for col in cols_to_check:
             state_vectors[col] = state_vectors[col].apply(lambda x: np.nan if isinstance(x, str) else x)
         state_vectors.dropna(inplace=True)
