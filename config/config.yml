@@ -34,9 +34,9 @@ data-compression:
     # Configurations defining the spline-compression algorithm
     spline-compressor:
         # The Maximum alowed percentage error between the data and the interpolation
-        max-error: 0.05
+        max-error: 0.001
         # Smallest precision step to which narrow down s
-        s-minimum-precision: 0.01
+        s-minimum-precision: 0.001
         # Initial precisionf step of s, must be large
         s-base-precision: 10000000000000000
         

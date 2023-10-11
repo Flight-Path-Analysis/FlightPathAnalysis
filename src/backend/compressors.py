@@ -65,13 +65,13 @@ class SplineCompressor:
         s_precision = self.s_base_precision
         s = 0
 
-        # Increase 's' until we achieve the desired correlation or until s_precision is too small
+        # Increase 's' until we achieve the desired uncertainty or until s_precision is too small
         while s_precision > self.s_min_precision:        
             s += s_precision
             spline = UnivariateSpline(xs, ys, s=s)
             err = self.compute_spline_uncertainty(xs, ys, spline)
-
-            if err > corr_thresh:
+#             print(err, self.max_error, s, s_precision)
+            if err > self.max_error:
                 s -= s_precision
                 s_precision /= 2
 
@@ -108,9 +108,10 @@ class SplineCompressor:
         Returns:
         - float: Uncertainty measure.
         """
+        dx = np.diff(xs)
         spline_ys = spline(xs)
-        R = (spline_ys - ys)
-        return np.sqrt(np.std(R**2))
+        integral = np.sum(abs(ys - spline_ys)[:-1]*dx)
+        return integral
     
     def encode_spline(self, spline, metadata={}):
         """
