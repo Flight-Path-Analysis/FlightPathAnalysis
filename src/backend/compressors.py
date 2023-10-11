@@ -238,10 +238,10 @@ class SplineCompressor:
             if key not in metadata[column]:
                 raise ValueError(f"Missing key {key} in metadata of {column}.")
 
-        min_x = metadata[column]["xmin"]
-        max_x = metadata[column]["xmax"]
-        min_y = metadata[column]["ymin"]
-        max_y = metadata[column]["ymax"]
+        x_min = metadata[column]["xmin"]
+        x_max = metadata[column]["xmax"]
+        y_min = metadata[column]["ymin"]
+        y_max = metadata[column]["ymax"]
 
         knots = metadata[column]["knots"]
         coeffs = metadata[column]["coefficients"]
@@ -252,10 +252,10 @@ class SplineCompressor:
 
         # Return an instance of ScaledSpline
         return self.ScaledSpline(spline,
-                                 {'min_x': min_x,
-                                  'max_x': max_x,
-                                  'min_y': min_y,
-                                  'max_y': max_y})
+                                 {'x_min': x_min,
+                                  'x_max': x_max,
+                                  'y_min': y_min,
+                                  'y_max': y_max})
 
     def encode_from_dataframe(
             self, dataframe, independent_variable, dependent_variable, metadata=None):
@@ -292,9 +292,9 @@ class SplineCompressor:
 
         # Normalize and scale the independent variable data
         original_xs = dataframe[independent_variable].values
-        min_x = min(original_xs)
-        max_x = max(original_xs)
-        xs = (original_xs - min_x) / (max_x - min_x)
+        x_min = min(original_xs)
+        x_max = max(original_xs)
+        xs = (original_xs - x_min) / (x_max - x_min)
 
         # Convert the dependent variable to a list format if it's a single string
         if isinstance(dependent_variable, str):
@@ -315,19 +315,19 @@ class SplineCompressor:
 
             # Normalize and scale the dependent variable data
             original_ys = dataframe[y_variable].values
-            min_y = min(original_ys)
-            max_y = max(original_ys)
-            ys = (original_ys - min_y) / (max_y - min_y)
+            y_min = min(original_ys)
+            y_max = max(original_ys)
+            ys = (original_ys - y_min) / (y_max - y_min)
 
             # Compute the best smoothing factor 's' for the spline
             best_s = self.best_spline_s(xs, ys)
 
             # Store min-max details in the metadata
             metadata[y_variable] = {
-                "xmin": min_x,
-                "xmax": max_x,
-                "ymin": min_y,
-                "ymax": max_y,
+                "xmin": x_min,
+                "xmax": x_max,
+                "ymin": y_min,
+                "ymax": y_max,
                 'best_s': float(best_s)
             }
 

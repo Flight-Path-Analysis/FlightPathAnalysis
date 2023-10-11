@@ -1,10 +1,35 @@
+"""
+This module provides utilities for data parsing and manipulation,
+specifically focused on string to number conversion, string results parsing
+to pandas DataFrames, date to UNIX timestamp conversion,
+and logging functionalities.
+
+Functions:
+    - to_number(s): Convert a string input to a number if possible.
+    - parse_to_dataframe(results): Parse the text results of a database query to a pandas DataFrame.
+    - to_unix_timestamp(date_input): Convert a given date input to its corresponding UNIX timestamp.
+
+Classes:
+    - Logger: Provides logging functionalities with a timestamp. 
+              It takes a configuration for its initialization and 
+              uses it to format and store log messages.
+
+Dependencies:
+    - numpy
+    - pandas
+    - warnings
+    - dateutil.parser
+    - datetime
+    - yaml
+    - os
+"""
+
+import os
+import datetime
+import dateutil.parser
+
 import numpy as np
 import pandas as pd
-import warnings
-import dateutil.parser
-import datetime
-import yaml
-import os
 
 def to_number(s):
     """
@@ -18,8 +43,9 @@ def to_number(s):
     - s: The input to be converted. Can be of any type, but typically expected to be a string.
     
     Returns:
-    - int or float or same type as input: If `s` can be converted to an integer or floating-point number, 
-      the converted number is returned. Otherwise, the original input is returned.
+    - int or float or same type as input: If `s` can be converted to an
+    integer or floating-point number, the converted number is returned.
+    Otherwise, the original input is returned.
       
     Examples:
     >>> to_number("45")
@@ -33,19 +59,18 @@ def to_number(s):
     """
     if not isinstance(s, str):
         return s
-    elif '.' in s:
+    if '.' in s:
         try:
             # Try to convert to a float
             return float(s)
         except ValueError:
             return s
-    else:
-        try:
-            # Try to convert to a float
-            return int(s)
-        except ValueError:
-            return s
-        
+    try:
+        # Try to convert to a float
+        return int(s)
+    except ValueError:
+        return s
+
 def parse_to_dataframe(results):
     """
     Parse the text results of a database query to a pandas DataFrame.
@@ -87,35 +112,41 @@ def parse_to_dataframe(results):
 
     lines = results.split('\n')
     if len(lines) < 4:
-        raise ValueError(f'Invalid input, results should consist of at least 4 lines, even if empty of data.{results}')
-        
+        raise ValueError(f'Invalid input, results should consist of \
+at least 4 lines, even if empty of data.{results}')
+
     first_line, columns_line, third_line, last_line = lines[0], lines[1], lines[2], lines[-1]
-    
+
     # Checks if first third, and last lines are properly formatted
     if (len(first_line.replace('+','').replace('-','')) != 0) or \
        (len(third_line.replace('+','').replace('-','')) != 0) or \
        (len(last_line.replace('+','').replace('-','')) != 0):
-        raise ValueError("Invalid input, first, third, and last line is expected to contain nothing but \"+\" and \"-\"")
-        
-    if not columns_line.startswith('|') or not columns_line.endswith('|'):
-        raise ValueError(f"Column lines should start with \" |\" and end with \"|\". {columns_line}")
-        
+        raise ValueError("Invalid input, first, third, and last line \
+is expected to contain nothing but \"+\" and \"-\"")
+
+    if not columns_line.startswith('|') or \
+    not columns_line.endswith('|'):
+        raise ValueError(f"Column lines should start with \
+\" |\" and end with \"|\". {columns_line}")
+
     # Extract column names
     columns = columns_line.replace(' ', '').replace('\t', '').split('|')[1:-1]
 
     # Extract data lines
-    data_lines = [line for line in lines[2:-1] if line != columns_line and not all(char in ['+', '-'] for char in line)]
-    
+    data_lines = [line for line in lines[2:-1] if line != columns_line \
+                  and not all(char in ['+', '-'] for char in line)]
+
     # Testing for consistency of data_lines
     n_cols = len(columns)
     for i, line in enumerate(data_lines):
         if line.count('|') != n_cols + 1:
-            raise ValueError(f"Invalid input, data line {i} does not agree with columns format\n{line}")
+            raise ValueError(f"Invalid input, data line \
+{i} does not agree with columns format\n{line}")
         if not line.startswith('|') or not line.endswith('|'):
             raise ValueError(f"Data lines should start with \" |\" and end with \"|\". {i}, {line}")
-    
+
     # Clean up lines and split them
-    data_lines = [line.replace(' ', '').replace('\t', '').split('|')[1:-1] for line in data_lines]  
+    data_lines = [line.replace(' ', '').replace('\t', '').split('|')[1:-1] for line in data_lines]
 
     # Create DataFrame
     if len(data_lines) == 0:
@@ -123,9 +154,9 @@ def parse_to_dataframe(results):
     else:
         df_data = np.array(data_lines).T
         df_dict = {col: df_data[i] for i, col in enumerate(columns)}
-        
+
     df = pd.DataFrame(df_dict).map(to_number)
-    
+
     return df
 
 def to_unix_timestamp(date_input):
@@ -166,11 +197,11 @@ def to_unix_timestamp(date_input):
     >>> to_unix_timestamp(datetime.datetime(2022, 1, 1, 0, 0))
     1641016800
     """
-    
+
     # If it's already an integer or float, just convert to integer
     if isinstance(date_input, (int, float, np.int64, np.float64)):
         return int(date_input)
-    
+
     # If it's a string, try to parse it
     if isinstance(date_input, str):
         try:
@@ -187,9 +218,9 @@ def to_unix_timestamp(date_input):
                     dt = dt.replace(tzinfo=datetime.timezone.utc)
                 # Return the UNIX timestamp
                 return int(dt.timestamp())
-            except:
-                raise ValueError("Unsupported date format")
-    
+            except Exception as exc:
+                raise ValueError("Unsupported date format") from exc
+
     # If it's a datetime.datetime object
     if isinstance(date_input, datetime.datetime):
         # Convert the datetime to UTC if it's not already
@@ -198,27 +229,43 @@ def to_unix_timestamp(date_input):
         else:
             date_input = date_input.replace(tzinfo=datetime.timezone.utc)
         return int(date_input.timestamp())
-    
+
     # If it's a date object, convert to a UTC datetime then to UNIX timestamp
     if isinstance(date_input, datetime.date):
-        dt = datetime.datetime(date_input.year, date_input.month, date_input.day, tzinfo=datetime.timezone.utc)
+        dt = datetime.datetime(date_input.year,
+                               date_input.month,
+                               date_input.day,
+                               tzinfo=datetime.timezone.utc)
         return int(dt.timestamp())
 
     raise ValueError("Unsupported date format")
 
 class Logger:
+    """
+    Logger class responsible for handling logging functionalities.
+
+    The Logger uses a provided configuration to format and store
+    log messages. The configuration should contain information regarding
+    the root directory, logging directory, and the logging tag.
+    Log entries are saved with timestamps for easier debugging and traceability.
+
+    Attributes:
+    - config (dict): The configuration dictionary used for logging settings.
+
+    Methods:
+    - clean_path(path): Ensure the provided path string ends with a '/'.
+    - log(text): Log the provided text with a timestamp to the specified log file.
+    """
     def __init__(self, config):
         self.config = config
-        
+
     def clean_path(self, path):
         """
-        Ensure the provided path string ends with a '/'.
+        Initializes the Logger class with the given configuration.
 
         Parameters:
-        - path (str): A directory path.
-
-        Returns:
-        - str: Path with a trailing '/' if it was missing.
+        - config (dict): The configuration dictionary containing settings
+            such as the root directory, logging directory, and the logging tag.
         """
         if isinstance(path, str):
             return path if path.endswith('/') else path + '/'
@@ -234,7 +281,7 @@ class Logger:
         """
         if not isinstance(text, str):
             raise ValueError('Text to log must be a string')
-        
+
         date = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
         root_dir = self.clean_path(self.config['base-configs']['root-directory'])
         log_directory = self.clean_path(self.config['log']['log-directory'])
@@ -248,7 +295,7 @@ class Logger:
         tag = self.config['base-configs']['tag']
 
         log_file = f'{log_directory}{tag}.log'
-        with open(log_file, 'a') as f:
+        with open(log_file, 'a', encoding="utf-8") as f:
             log_entry = f'{date} : {text}\n'
             print(log_entry, end='')  # Printing without extra newline since log_entry includes it
             f.write(log_entry)

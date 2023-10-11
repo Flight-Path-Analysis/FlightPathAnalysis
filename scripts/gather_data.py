@@ -34,7 +34,8 @@ Note:
     - Ensure the specified paths, configurations, and dependencies are set up correctly
       before running the script.
 """
-
+# import sys
+# sys.path.append('.')
 import yaml
 import numpy as np
 
@@ -45,7 +46,7 @@ from src.backend import compressors
 ROOT_PATH = '.'
 
 # Loading config file
-with open(f'{ROOT_PATH}/config/config.yml', 'r') as file:
+with open(f'{ROOT_PATH}/config/config.yml', 'r', encoding="utf-8") as file:
     try:
         CONFIG = yaml.safe_load(file)
     except yaml.YAMLError as exc:
@@ -56,7 +57,7 @@ CREDENTIALS_FILE = CONFIG['base-configs']['opensky-credentials']
 if not CREDENTIALS_FILE:
     raise ValueError('No OpenSky credentials file specified in in config.yaml')
 
-with open(f'{ROOT_PATH}/{CREDENTIALS_FILE}', 'r') as file:
+with open(f'{ROOT_PATH}/{CREDENTIALS_FILE}', 'r', encoding="utf-8") as file:
     try:
         CREDENTIALS = yaml.safe_load(file)
     except yaml.YAMLError as exc:
@@ -65,12 +66,12 @@ with open(f'{ROOT_PATH}/{CREDENTIALS_FILE}', 'r') as file:
 # Defining Logger
 LOGGER = utils.Logger(CONFIG)
 
+CREDENTIALS['hostname'] = CONFIG['data-gather']['flights']['hostname']
+CREDENTIALS['port'] = CONFIG['data-gather']['flights']['port']
+
 # Creates an instane of the Querier class used for querying the opensky database
 OPENSKY_QUERIER = opensky_query.Querier(
-    CREDENTIALS['username'],
-    CREDENTIALS['password'],
-    CONFIG['data-gather']['flights']['hostname'],
-    CONFIG['data-gather']['flights']['port'],
+    CREDENTIALS,
     logger=LOGGER)
 
 # Creates an instance of the SplineCompressor class.
@@ -133,5 +134,6 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
         # Turns dictionary data into the yaml format
         yaml_data = yaml.dump(metadata, default_flow_style=None)
         # Saves it to a yaml file
-        with open(f"{ROOT_PATH}/{CONFIG['data-gathe']['flights']}/{flight_id}.yml", 'w') as f:
+        with open(f"{ROOT_PATH}/{CONFIG['data-gathe']['flights']}/{flight_id}.yml", 'w'
+                  , encoding="utf-8") as f:
             f.write(yaml_data)
