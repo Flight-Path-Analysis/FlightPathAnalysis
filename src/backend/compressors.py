@@ -108,10 +108,9 @@ class SplineCompressor:
         Returns:
         - float: Uncertainty measure.
         """
-        dx = np.diff(xs)
         spline_ys = spline(xs)
-        integral = np.sum(abs(ys - spline_ys)[:-1]*dx)
-        return integral
+        sigma = np.sqrt(np.mean((ys - spline_ys)**2))
+        return sigma
     
     def encode_spline(self, spline, metadata={}):
         """
