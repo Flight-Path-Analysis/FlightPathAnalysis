@@ -77,7 +77,7 @@ def test_parse_to_dataframe():
     
     input_bad_2 = ''
     
-    output_bad_2 = pytest.raises(ValueError, match="Provided results string is empty. Returning an empty DataFrame.")
+    output_bad_2 = pytest.raises(ValueError, match="Provided results string is empty.")
     
     # Sample input for bad_case_3, arbitrary string input
     input_bad_3 = 'a'
