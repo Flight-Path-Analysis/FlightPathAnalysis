@@ -493,7 +493,7 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
                 password=self.credentials['password']
             )
             query = self.create_query_command_for_state_vectors(
-                icao24, times_unix, bad_hours)
+                icao24, {'start': start_time, 'end': end_time}, bad_hours)
 
             self.log_verbose(f"Querying: {query}")
             _, query_results['stdout'], query_results['stderr'] \

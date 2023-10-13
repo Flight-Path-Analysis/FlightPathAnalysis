@@ -15,6 +15,9 @@ import pandas as pd
 import pytest
 from tests.mocks import mock_paramiko
 from src.backend import opensky_query
+from src.backend import utils
+import datetime
+import os
 
 def test_query_flight_data():
     """
@@ -371,3 +374,105 @@ ORDER BY firstseen;"""
         )
 
         assert output == good_output_3
+
+def test_handler():
+    """
+    Test the `handler` function from the `opensky_query` module.
+    
+    This test function covers:
+    - Raising a TimeoutError when the signal handler is called.
+    """
+    import signal
+    
+    # Set the signal handler to the `handler` function
+    signal.signal(signal.SIGALRM, opensky_query.handler)
+    
+    # Set the alarm to go off in 1 second
+    signal.alarm(1)
+    
+    # Wait for the alarm to go off and catch the TimeoutError
+    with pytest.raises(TimeoutError):
+        while True:
+            pass
+    
+def test_initialize_bad_days_df_with_existing_csv():
+    """
+    Test the `initialize_bad_days_df` method from the `Querier` class in `opensky_query`
+    when `self.bad_days_csv` exists and points to a valid path.
+    
+    This test function covers:
+    - Reading the `self.bad_days_csv` file into a DataFrame.
+    - Retaining only the entries from the last week.
+    - Dropping duplicates based on the 'day' column.
+    """
+    good_credentials = {
+        "username": "admin",
+        "password": "password",
+        "hostname": "ssh.mock.fake",
+        "port": "0",
+        "chunk_size": 100000000,
+        "flight_data_retries": 3,
+        "flight_data_timeout": 300,
+        "state_vector_retries": 3,
+        "state_vector_timeout": 300
+    }
+    # Create a temporary CSV file with some data
+    temp_csv = "temp_bad_days.csv"
+    df = {'day':[], 'date_registered':[]}
+    now = datetime.datetime.now()
+    for i in range(10):
+        time = now - datetime.timedelta(days=i)
+        year = time.year
+        month = time.month
+        day = time.day
+        hh = time.hour
+        mm = time.minute
+        ss = time.second
+        df['day'] += [utils.to_unix_timestamp(time)]
+        df['date_registered'] += [f"{year}-{month}-{day} {hh}:{mm}:{ss}"]
+    df = pd.DataFrame(df)
+    df.to_csv(temp_csv)
+    
+    # Initialize the bad days DataFrame
+    querier = opensky_query.Querier(good_credentials)
+    querier.bad_days_csv = temp_csv
+    print(pd.read_csv(querier.bad_days_csv))
+    bad_days_df = querier.initialize_bad_days_df()
+
+    print(bad_days_df)
+    
+    # Check that the DataFrame has the expected shape and contents
+    assert bad_days_df.shape == (7, 2)
+    
+    # Clean up the temporary CSV file
+    os.remove(temp_csv)
+
+
+def test_initialize_bad_days_df_with_nonexistent_csv():
+    """
+    Test the `initialize_bad_days_df` method from the `Querier` class in `opensky_query`
+    when `self.bad_days_csv` doesn't point to a valid path.
+    
+    This test function covers:
+    - Creating an empty DataFrame with columns 'day' and 'date_registered'.
+    - Dropping duplicates based on the 'day' column.
+    """
+    good_credentials = {
+        "username": "admin",
+        "password": "password",
+        "hostname": "ssh.mock.fake",
+        "port": "0",
+        "chunk_size": 100000000,
+        "flight_data_retries": 3,
+        "flight_data_timeout": 300,
+        "state_vector_retries": 3,
+        "state_vector_timeout": 300
+    }
+    # Initialize the bad days DataFrame
+    querier = opensky_query.Querier(good_credentials)
+    querier.bad_days_csv = "nonexistent.csv"
+    bad_days_df = querier.initialize_bad_days_df()
+    
+    # Check that the DataFrame has the expected shape and contents
+    assert bad_days_df.shape == (0, 2)
+    assert list(bad_days_df.columns) == ["day", "date_registered"]
