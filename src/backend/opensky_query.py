@@ -253,10 +253,17 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
             # Continue querying until successful or all bad days are excluded
             while "Disk I/O error" in query_results['stderr']:
                 log_verbose("Bad day found, trying again.")
-                bad_days_df = pd.concat([bad_days_df, pd.DataFrame(
+                
+                bad_days_new = pd.DataFrame(
                     {'day':[int(query_results['stderr'].split("\n")[3].split(
                     "day=")[-1].split("/")[0])],
-                     'date_registered':[datetime.datetime.now()]})])
+                     'date_registered':[datetime.datetime.now()]})
+                
+                if len(bad_days_df) == 0:
+                    bad_days_df = bad_days_new.copy()
+                else:
+                    bad_days_df = pd.concat([bad_days_df, bad_days_new])
+                    
                 bad_days_df.sort_values('day', inplace=True)
 
                 log_verbose("Bad Days:")
@@ -284,11 +291,15 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
                 self.client.close()
                 
             if results_df is not None:
-                results_df = pd.concat([results_df, utils.parse_to_dataframe(query_results['stdout'])])
+                if len(results_df) == 0:
+                    results_df = utils.parse_to_dataframe(query_results['stdout'])
+                elif len(utils.parse_to_dataframe(query_results['stdout'])) != 0:
+                    results_df = pd.concat([results_df, utils.parse_to_dataframe(query_results['stdout'])])
+                    
             else:
                 results_df = utils.parse_to_dataframe(query_results['stdout'])
 
-        return results_df.reset_index()
+        return results_df
 
     def query_state_vectors(self, icao24, start_time, end_time):
         """
