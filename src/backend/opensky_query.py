@@ -59,13 +59,8 @@ class Querier:
         - client (paramiko.SSHClient): An SSH client instance to manage SSH connections.
         - logger (utils.Logger): The Logger class instance to log text outputs
         """
-
-        self.__username = credentials['username']
-        self.__password = credentials['password']
-        self.hostname = credentials['hostname']
-        self.port = credentials['port']
+        self.credentials = credentials
         self.client = paramiko.SSHClient()
-        self.chunk_size = credentials['chunk_size']
 
         if 'bad_days_csv' in credentials:
             self.bad_days_csv = credentials['bad_days_csv']
@@ -75,6 +70,22 @@ class Querier:
         self.logger = logger
 
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    # Function that will log text if logger is different than None
+    def log_verbose(self, message):
+        """
+        Log a message if a logger is configured.
+
+        This method conditionally logs messages based on whether `self.logger`
+        is configured. If `self.logger` is not None, the provided message is
+        logged. This allows for flexible logging control within classes and functions,
+        enabling logging when needed without modifying the internal logging calls.
+
+        Parameters:
+        - message (str): The message to be logged.
+        """
+        if self.logger:
+            self.logger.log(message)
 
     def create_query_command_for_flight_data(
         self,
@@ -156,8 +167,127 @@ baroaltitude, geoaltitude, onground, hour
         query += "ORDER BY time;"
         return query
 
-    def query_flight_data(
-        self, airports, dates):
+    def execute_query(self, query):
+        """
+        Execute an SQL query on the OpenSky database and return the results and errors if any.
+
+        Parameters:
+        - query (str): The SQL query string to be executed.
+
+        Returns:
+        - dict: A dictionary containing:
+            - stdout (str): The standard output of the query, typically the query results.
+            - stderr (str): The standard error of the query, typically error messages.
+        """
+
+        _, stdout, stderr = self.client.exec_command(f"-q {query}")
+        return {
+            'stdout': stdout.read().decode(),
+            'stderr': stderr.read().decode()
+        }
+
+    def handle_query(self, airports, dates_unix, bad_days_df):
+        """
+        Manage the query execution by connecting to the client,
+        executing the query, and closing the connection.
+
+        Parameters:
+        - airports (dict): Dictionary containing departure and arrival airports.
+        - dates_unix (dict): Dictionary containing start and end dates in UNIX timestamp format.
+        - bad_days_df (pd.DataFrame): DataFrame containing days
+        (UNIX timestamp) to exclude from query.
+
+        Returns:
+        - dict: Dictionary containing standard output and
+        standard error from the query execution.
+        """
+
+        self.client.connect(
+            self.credentials['hostname'],
+            port=self.credentials['port'],
+            username=self.credentials['username'],
+            password=self.credentials['password']
+        )
+
+        query = self.create_query_command_for_flight_data(
+            airports, dates_unix, bad_days_df['day'].to_list())
+        print(query)
+
+        self.log_verbose(f"Querying: {query}")
+        query_results = self.execute_query(query)
+
+        self.client.close()
+        return query_results
+
+    def compute_date_intervals(self, dates_unix):
+        """
+        Compute date intervals based on the specified Unix start and end dates.
+
+        Parameters:
+        - dates_unix (dict): A dictionary containing the 'start' and 'end' Unix timestamps
+                              of the desired date range.
+
+        Returns:
+        - list: A list of Unix timestamps representing the intervals at which queries will be made.
+                The length of each interval is determined by `self.credentials['chunk_size']`.
+                The last element in the list is always the 'end' timestamp from `dates_unix`.
+
+        Note:
+        The returned list of timestamps represents the intervals that the data fetching
+        will occur. If the total time range is less than or equal to 
+        `self.credentials['chunk_size']`, the function returns the original start and
+        end timestamps. Otherwise, the function returns evenly spaced timestamps at
+        intervals of `self.credentials['chunk_size']` between the original start and 
+        end timestamps.
+        """
+        if dates_unix['end'] - dates_unix['start'] <= self.credentials['chunk_size']:
+            dates = [dates_unix['start'], dates_unix['end']]
+        else:
+            dates = list(range(dates_unix['start'], dates_unix['end'],
+                               self.credentials['chunk_size']))
+            if dates[-1] != dates_unix['end']:
+                dates += [dates_unix['end']]
+        return dates
+
+    def initialize_bad_days_df(self):
+        """
+        Initialize a DataFrame to keep track of days for which query attempts 
+        have resulted in errors.
+
+        Two scenarios are considered:
+        - If `self.bad_days_csv` exists and points to a valid path, the function 
+        reads it into a DataFrame. Only the entries from the last week are retained.
+        - If `self.bad_days_csv` doesn't point to a valid path, an empty 
+        DataFrame is created with columns 'day' and 'date_registered'.
+
+        The resulting DataFrame is then deduplicated based on the 'day' column.
+
+        Returns:
+        - pd.DataFrame: A DataFrame with columns 'day' and 'date_registered'
+        to store bad days data. Each row contains an integer Unix timestamp under
+        'day' and the timestamp when it was registered under 'date_registered'.
+
+        Note:
+        'day': Refers to Unix timestamps of days when an error was encountered 
+        during data retrieval.
+        'date_registered': The datetime object representing when the 
+        error day was logged.
+        """
+        # Array to save the days that return an error from the query
+        if self.bad_days_csv and os.path.exists(self.bad_days_csv):
+            bad_days_df = pd.read_csv(self.bad_days_csv, index_col = 0,
+                                      parse_dates=['date_registered'])
+
+            bad_days_df = bad_days_df[bad_days_df['date_registered'].apply(
+                lambda x: (datetime.datetime.now() - x) < datetime.timedelta(weeks = 1))]
+        else:
+            bad_days_df = pd.DataFrame({'day':[], 'date_registered':[]})
+
+        bad_days_df.drop_duplicates(['day'], inplace=True)
+
+        return bad_days_df
+
+    def query_flight_data(self, airports, dates):
         """
         Query flight data from the OpenSky database using the provided client.
 
@@ -172,25 +302,11 @@ baroaltitude, geoaltitude, onground, hour
         Returns:
         - pd.DataFrame: DataFrame containing the flight data results.
         """
-
-        # Function that will log text if logger is different than None
-        def log_verbose(message):
-            if self.logger:
-                self.logger.log(message)
-
         # If logger is NOT None, checks if it's an isnstance of utils.Logger
         if self.logger and not isinstance(self.logger, utils.Logger):
             raise ValueError("Expected logger to be an instance of utils.Logger")
-        
-        # Array to save the days that return an error from the query
-        if self.bad_days_csv and os.path.exists(self.bad_days_csv):
-            bad_days_df = pd.read_csv(self.bad_days_csv, index_col = 0,
-                                      parse_dates=['date_registered'])
 
-            bad_days_df = bad_days_df[bad_days_df['date_registered'].apply(
-                lambda x: (datetime.datetime.now() - x) < datetime.timedelta(weeks = 1))]
-        else:
-            bad_days_df = pd.DataFrame({'day':[], 'date_registered':[]})
+        bad_days_df = self.initialize_bad_days_df()
 
         # Convert dates to UNIX timestamps
         dates_unix = {'start': utils.to_unix_timestamp(dates['start']),
@@ -200,14 +316,9 @@ baroaltitude, geoaltitude, onground, hour
             "%Y-%m-%d HH:MM:SS"),
                     'end':datetime.datetime.fromtimestamp(dates_unix['end']).strftime(
             "%Y-%m-%d HH:MM:SS")}
-        
-        if dates_unix['end'] - dates_unix['start'] <= self.chunk_size:
-            dates = [dates_unix['start'], dates_unix['end']]
-        else:
-            dates = list(range(dates_unix['start'], dates_unix['end'], self.chunk_size))
-            if dates[-1] != dates_unix['end']:
-                dates += [dates_unix['end']]
-                
+
+        dates = self.compute_date_intervals(dates_unix)
+
         results_df = None
         for date_start, date_end in zip(dates[:-1], dates[1:]):
             dates_unix = {'start': date_start,
@@ -217,85 +328,47 @@ baroaltitude, geoaltitude, onground, hour
                 "%Y-%m-%d HH:MM:SS"),
                         'end':datetime.datetime.fromtimestamp(dates_unix['end']).strftime(
                 "%Y-%m-%d HH:MM:SS")}
-            
+
             # Logs the initial query
-            log_verbose(
+            self.log_verbose(
                 f"Querying data for flights from {airports['departure_airport']} \
 to {airports['arrival_airport']} between the dates {dates_str['start']} and {dates_str['end']}"
-            )
+)
 
-            # Connecting to client
-            self.client.connect(
-                self.hostname,
-                port=self.port,
-                username=self.__username,
-                password=self.__password,
-            )
-
-            # Building the query
-            query = self.create_query_command_for_flight_data(
-                airports, dates_unix, bad_days_df['day'].to_list())
-
-            # Logs query
-            log_verbose(f"Querying: {query}")
-
-            # Execute the query and save it to query_results
-            query_results = {}
-            _, query_results['stdout'], query_results['stderr'] \
-            = self.client.exec_command(f"-q {query}")
-
-            # Reads and decodes query results
-            query_results['stdout'] = query_results['stdout'].read().decode()
-            query_results['stderr'] = query_results['stderr'].read().decode()
-
-            self.client.close()
+            query_results = self.handle_query(airports, dates_unix, bad_days_df)
 
             # Continue querying until successful or all bad days are excluded
             while "Disk I/O error" in query_results['stderr']:
-                log_verbose("Bad day found, trying again.")
-                
+                self.log_verbose("Bad day found, trying again.")
                 bad_days_new = pd.DataFrame(
                     {'day':[int(query_results['stderr'].split("\n")[3].split(
                     "day=")[-1].split("/")[0])],
                      'date_registered':[datetime.datetime.now()]})
-                
+
                 if len(bad_days_df) == 0:
                     bad_days_df = bad_days_new.copy()
                 else:
                     bad_days_df = pd.concat([bad_days_df, bad_days_new])
-                    
                 bad_days_df.sort_values('day', inplace=True)
-
-                log_verbose("Bad Days:")
+                bad_days_df.drop_duplicates(['day'], inplace=True)
+                print(bad_days_df)
+                self.log_verbose("Bad Days:")
                 for day in bad_days_df['day'].to_list():
-                    log_verbose(" - " + datetime.datetime.fromtimestamp(int(day)).strftime(
+                    self.log_verbose(" - " + datetime.datetime.fromtimestamp(int(day)).strftime(
                         "%Y-%m-%d HH:MM:SS"))
 
                 if self.bad_days_csv:
                     bad_days_df.to_csv(self.bad_days_csv)
 
-                self.client.connect(
-                    self.hostname,
-                    port=self.port,
-                    username=self.__username,
-                    password=self.__password)
+                query_results = self.handle_query(airports, dates_unix, bad_days_df)
 
-                query = self.create_query_command_for_flight_data(
-                    airports, dates_unix, bad_days_df['day'].to_list())
-                log_verbose(f"Querying: {query}")
-                _, query_results['stdout'], query_results['stderr'] \
-                = self.client.exec_command(f"-q {query}")
-                query_results['stdout'] = query_results['stdout'].read().decode()
-                query_results['stderr'] = query_results['stderr'].read().decode()
-
-                self.client.close()
-                
             if results_df is not None:
                 if len(results_df) == 0:
                     results_df = utils.parse_to_dataframe(query_results['stdout'])
                 elif len(utils.parse_to_dataframe(query_results['stdout'])) != 0:
-                    results_df = pd.concat([results_df, utils.parse_to_dataframe(query_results['stdout'])])
-                    
+                    results_df = pd.concat([results_df, utils.parse_to_dataframe(
+                        query_results['stdout'])])
+
             else:
                 results_df = utils.parse_to_dataframe(query_results['stdout'])
 
@@ -316,11 +389,6 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
         - pd.DataFrame: DataFrame containing the state vectors results.
         """
 
-        # Function that will log text if logger is different than None
-        def log_verbose(message):
-            if self.logger:
-                self.logger.log(message)
-
         # If logger is NOT None, checks if it's an isnstance of utils.Logger
         if self.logger and not isinstance(self.logger, utils.Logger):
             raise ValueError("Expected logger to be an instance of utils.Logger")
@@ -337,17 +405,17 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
         bad_hours = []
 
         # Logs the initial query
-        log_verbose(
+        self.log_verbose(
             f"Querying data for statevectors for ICAO24 {icao24} \
-            between the times {times_str['start']} and {times_str['end']}"
+between the times {times_str['start']} and {times_str['end']}"
         )
 
         # Connecting to client
         self.client.connect(
-            self.hostname,
-            port=self.port,
-            username=self.__username,
-            password=self.__password,
+            self.credentials['hostname'],
+            port=self.credentials['port'],
+            username=self.credentials['username'],
+            password=self.credentials['password'],
         )
 
         # Building the query
@@ -355,7 +423,7 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
             icao24, times_unix, bad_hours)
 
         # Logs query
-        log_verbose(f"Querying: {query}")
+        self.log_verbose(f"Querying: {query}")
 
         # Execute the query
         query_results = {}
@@ -371,25 +439,25 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
 
         # Continue querying until successful or all bad hours are excluded
         while "Disk I/O error" in query_results['stderr']:
-            log_verbose("Bad hour found, trying again.")
+            self.log_verbose("Bad hour found, trying again.")
             bad_hours += [int(query_results['stderr'].split("\n")[3].split(
                 "hour=")[-1].split("/")[0])]
             bad_hours = sorted(bad_hours)
-            log_verbose("Bad Hours:")
+            self.log_verbose("Bad Hours:")
             for hour in bad_hours:
                 date_str = datetime.datetime.fromtimestamp(hour).strftime("%Y-%m-%d")
-                log_verbose(f" - {date_str}")
+                self.log_verbose(f" - {date_str}")
             # Re-query
             self.client.connect(
-                self.hostname,
-                port=self.port,
-                username=self.__username,
-                password=self.__password,
+                self.credentials['hostname'],
+                port=self.credentials['port'],
+                username=self.credentials['username'],
+                password=self.credentials['password']
             )
             query = self.create_query_command_for_state_vectors(
                 icao24, times_unix, bad_hours)
 
-            log_verbose(f"Querying: {query}")
+            self.log_verbose(f"Querying: {query}")
             _, query_results['stdout'], query_results['stderr'] \
             = self.client.exec_command(f"-q {query}")
 

@@ -100,7 +100,7 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
         estdepartureairport = flight['estdepartureairport']
         estarrivalairport = flight['estarrivalairport']
         flight_id = f"{icao24}_{firstseen}_{lastseen}_\
-        {estdepartureairport}_{estarrivalairport}"
+{estdepartureairport}_{estarrivalairport}"
 
         state_vectors = OPENSKY_QUERIER.query_state_vectors(
                         icao24,

@@ -200,11 +200,11 @@ def test_query_flight_data():
         # Good Case
 
         acquired_df = opensky_query.Querier(good_credentials).query_flight_data(
-            {'departure_airport':"KBTR", "arrival_airport": "KDFW"},
+            {'departure_airport': "KBTR", "arrival_airport": "KDFW"},
             {'start': 1685577600, 'end': 1685836800}
         )
-        print(acquired_df)
-        print(expected_df)
+        print('----\nAquired DF:' + str(acquired_df) + '\n----')
+        print('----\nAquired DF:' + str(expected_df) + '\n----')
 
         pd.testing.assert_frame_equal(acquired_df, expected_df)
 
@@ -239,7 +239,7 @@ def test_query_flight_data():
             {'departure_airport':"KBTR", "arrival_airport": "KDFW"},
             {'start': 1685577600, 'end': 1685836800}
             )
-
+test_query_flight_data()
 def test_create_query_command_for_flight_data():
     """
     Test the `create_query_command_for_flight_data` method from the `Querier`
