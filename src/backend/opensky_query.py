@@ -21,8 +21,10 @@ a `Querier` object. Once initialized, the `query_flight_data` and
 `query_state_vectors` methods can be used to retrieve data from the 
 OpenSky database.
 """
+import os
 import datetime
 import paramiko
+import pandas as pd
 
 from src.backend import utils
 
@@ -63,6 +65,12 @@ class Querier:
         self.hostname = credentials['hostname']
         self.port = credentials['port']
         self.client = paramiko.SSHClient()
+
+        if 'bad_days_csv' in credentials:
+            self.bad_days_csv = credentials['bad_days_csv']
+        else:
+            self.bad_days_csv = None
+
         self.logger = logger
 
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -103,7 +111,7 @@ estdepartureairport, estarrivalairport, day
     """
         # Add conditions to exclude bad days
         for day in sorted(bad_days):
-            query += f"AND day != {day}\n"
+            query += f"AND day != {int(day)}\n"
 
         # Add ordering and limit if specified
         query += "ORDER BY firstseen"
@@ -139,7 +147,7 @@ baroaltitude, geoaltitude, onground, hour
     """
         # Add conditions to exclude bad hours
         for hour in bad_hours:
-            query += f"AND hour != {hour}\n"
+            query += f"AND hour != {int(hour)}\n"
         if limit:
             query += f"LIMIT {limit}\n"
         # Add ordering and limit if specified
@@ -181,8 +189,17 @@ baroaltitude, geoaltitude, onground, hour
                     'end':datetime.datetime.fromtimestamp(dates_unix['end']).strftime(
             "%Y-%m-%d HH:MM:SS")}
 
+        airports = {'departure_airport':departure_airport,
+                   'arrival_airport':arrival_airport}
         # Array to save the days that return an error from the query
-        bad_days = []
+        if self.bad_days_csv and os.path.exists(self.bad_days_csv):
+            bad_days_df = pd.read_csv(self.bad_days_csv, index_col = 0,
+                                      parse_dates=['date_registered'])
+
+            bad_days_df = bad_days_df[bad_days_df['date_registered'].apply(
+                lambda x: (datetime.datetime.now() - x) < datetime.timedelta(weeks = 1))]
+        else:
+            bad_days_df = pd.DataFrame({'day':[], 'date_registered':[]})
 
         # Logs the initial query
         log_verbose(
@@ -198,12 +215,9 @@ to {arrival_airport} between the dates {dates_str['start']} and {dates_str['end'
             password=self.__password,
         )
 
-        airports = {'departure_airport':departure_airport,
-                   'arrival_airport':arrival_airport}
-
         # Building the query
         query = self.create_query_command_for_flight_data(
-            airports, dates_unix, bad_days)
+            airports, dates_unix, bad_days_df['day'].to_list())
 
         # Logs query
         log_verbose(f"Querying: {query}")
@@ -225,13 +239,19 @@ to {arrival_airport} between the dates {dates_str['start']} and {dates_str['end'
         # Continue querying until successful or all bad days are excluded
         while "Disk I/O error" in query_results['stderr']:
             log_verbose("Bad day found, trying again.")
-            bad_days += [int(query_results['stderr'].split("\n")[3].split(
-                "day=")[-1].split("/")[0])]
-            bad_days = sorted(bad_days)
+            bad_days_df = pd.concat([bad_days_df, pd.DataFrame(
+                {'day':[int(query_results['stderr'].split("\n")[3].split(
+                "day=")[-1].split("/")[0])],
+                 'date_registered':[datetime.datetime.now()]})])
+            bad_days_df.sort_values('day', inplace=True)
+            
             log_verbose("Bad Days:")
-            for day in bad_days:
-                log_verbose(" - " + datetime.datetime.fromtimestamp(day).strftime(
+            for day in bad_days_df['day'].to_list():
+                log_verbose(" - " + datetime.datetime.fromtimestamp(int(day)).strftime(
                     "%Y-%m-%d HH:MM:SS"))
+            
+            if self.bad_days_csv:
+                bad_days_df.to_csv(self.bad_days_csv)
 
             self.client.connect(
                 self.hostname,
@@ -240,7 +260,7 @@ to {arrival_airport} between the dates {dates_str['start']} and {dates_str['end'
                 password=self.__password)
 
             query = self.create_query_command_for_flight_data(
-                airports, dates_unix, bad_days)
+                airports, dates_unix, bad_days_df['day'].to_list())
             log_verbose(f"Querying: {query}")
             _, query_results['stdout'], query_results['stderr'] \
             = self.client.exec_command(f"-q {query}")

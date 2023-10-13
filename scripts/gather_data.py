@@ -68,6 +68,7 @@ LOGGER = utils.Logger(CONFIG)
 
 CREDENTIALS['hostname'] = CONFIG['data-gather']['flights']['hostname']
 CREDENTIALS['port'] = CONFIG['data-gather']['flights']['port']
+CREDENTIALS['bad_days_csv'] = CONFIG['data-gather']['flights']['bad-days-csv']
 
 # Creates an instane of the Querier class used for querying the opensky database
 OPENSKY_QUERIER = opensky_query.Querier(

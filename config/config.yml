@@ -25,9 +25,11 @@ data-gather:
         ['KJFK','EGLL'],
         ]
         # Starting date of flights of interest
-        start-date: '2020-01-01'
+        start-date: '2022-01-01'
         # Ending date of flights of interest
-        end-date: '2021-01-01'
+        end-date: '2023-01-01'
+        # Bad Days csv
+        bad-days-csv: 'data/flight/bad_days.csv'
 
 # All configurations for data compression
 data-compression:

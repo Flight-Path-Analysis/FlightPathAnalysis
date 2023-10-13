@@ -6,6 +6,7 @@ node_modules/
 # OS generated
 **/__pycache__
 **/.DS_Store
+data/flight/*
 Thumbs.db
 prototyping/**/*.*
 !prototyping/**/
