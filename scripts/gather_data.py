@@ -68,6 +68,8 @@ LOGGER = utils.Logger(CONFIG)
 
 CREDENTIALS['hostname'] = CONFIG['data-gather']['flights']['hostname']
 CREDENTIALS['port'] = CONFIG['data-gather']['flights']['port']
+CREDENTIALS['bad_days_csv'] = CONFIG['data-gather']['flights']['bad-days-csv']
+CREDENTIALS['chunk_size'] = CONFIG['data-gather']['flights']['chunk-size']
 
 # Creates an instane of the Querier class used for querying the opensky database
 OPENSKY_QUERIER = opensky_query.Querier(
@@ -83,13 +85,13 @@ COLUMNS_COMPRESS = ['lat', 'lon', 'baroaltitude', 'geoaltitude', 'heading', 'vel
 for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
     start_date = CONFIG['data-gather']['flights']['start-date']
     end_date = CONFIG['data-gather']['flights']['end-date']
-    origin_airport = airport_route[0]
-    destination_airport = airport_route[1]
+    departure_airport = airport_route[0]
+    arrival_airport = airport_route[1]
     flights = OPENSKY_QUERIER.query_flight_data(
-        origin_airport,
-        destination_airport,
-        start_date,
-        end_date)
+        {'departure_airport': departure_airport,
+        'arrival_airport': arrival_airport},
+        {'start': start_date,
+        'end': end_date})
 
     for i, flight in flights.iterrows():
         icao24 = flight['icao24']
@@ -134,6 +136,6 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
         # Turns dictionary data into the yaml format
         yaml_data = yaml.dump(metadata, default_flow_style=None)
         # Saves it to a yaml file
-        with open(f"{ROOT_PATH}/{CONFIG['data-gathe']['flights']}/{flight_id}.yml", 'w'
+        with open(f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}/{flight_id}.yml", 'w'
                   , encoding="utf-8") as f:
             f.write(yaml_data)

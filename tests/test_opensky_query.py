@@ -14,7 +14,6 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 from tests.mocks import mock_paramiko
-
 from src.backend import opensky_query
 
 def test_query_flight_data():
@@ -35,6 +34,7 @@ def test_query_flight_data():
             "password": "password",
             "hostname": "ssh.mock.fake",
             "port": "0",
+            "chunk_size": 100000000
         }
 
         expected_df = pd.DataFrame(
@@ -154,6 +154,7 @@ def test_query_flight_data():
             "password": "password",
             "hostname": "ssh.mock.fake",
             "port": "0",
+            "chunk_size": 100000000
         }
 
         output_bad_1 = pytest.raises(ValueError, match="Invalid Username")
@@ -165,6 +166,7 @@ def test_query_flight_data():
             "password": "pswrd",
             "hostname": "ssh.mock.fake",
             "port": "0",
+            "chunk_size": 100000000
         }
 
         output_bad_2 = pytest.raises(ValueError, match="Invalid Password")
@@ -176,6 +178,7 @@ def test_query_flight_data():
             "password": "password",
             "hostname": "ssh.mock.fake",
             "port": "1",
+            "chunk_size": 100000000
         }
 
         output_bad_3 = pytest.raises(ValueError, match="Invalid Port")
@@ -187,6 +190,7 @@ def test_query_flight_data():
             "password": "password",
             "hostname": "mock.fake",
             "port": "0",
+            "chunk_size": 100000000
         }
 
         output_bad_4 = pytest.raises(ValueError, match="Invalid Hostname")
@@ -196,8 +200,11 @@ def test_query_flight_data():
         # Good Case
 
         acquired_df = opensky_query.Querier(good_credentials).query_flight_data(
-            "KBTR", "KDFW", 1685577600, 1685836800
+            {'departure_airport':"KBTR", "arrival_airport": "KDFW"},
+            {'start': 1685577600, 'end': 1685836800}
         )
+        print(acquired_df)
+        print(expected_df)
 
         pd.testing.assert_frame_equal(acquired_df, expected_df)
 
@@ -205,30 +212,33 @@ def test_query_flight_data():
 
         with output_bad_1:
             opensky_query.Querier(bad_credentials_1).query_flight_data(
-                "KBTR", "KDFW", 1685577600, 1685836800
+            {'departure_airport':"KBTR", "arrival_airport": "KDFW"},
+            {'start': 1685577600, 'end': 1685836800}
             )
 
         # Bad Case 2, wrong password
 
         with output_bad_2:
             opensky_query.Querier(bad_credentials_2).query_flight_data(
-                "KBTR", "KDFW", 1685577600, 1685836800
+            {'departure_airport':"KBTR", "arrival_airport": "KDFW"},
+            {'start': 1685577600, 'end': 1685836800}
             )
 
         # Bad Case 3, wrong port
 
         with output_bad_3:
             opensky_query.Querier(bad_credentials_3).query_flight_data(
-                "KBTR", "KDFW", 1685577600, 1685836800
+            {'departure_airport':"KBTR", "arrival_airport": "KDFW"},
+            {'start': 1685577600, 'end': 1685836800}
             )
 
         # Bad Case 4, wrong hostname
 
         with output_bad_4:
             opensky_query.Querier(bad_credentials_4).query_flight_data(
-                "KBTR", "KDFW", 1685577600, 1685836800
+            {'departure_airport':"KBTR", "arrival_airport": "KDFW"},
+            {'start': 1685577600, 'end': 1685836800}
             )
-
 
 def test_create_query_command_for_flight_data():
     """
@@ -246,6 +256,7 @@ def test_create_query_command_for_flight_data():
             "password": "password",
             "hostname": "ssh.mock.fake",
             "port": "0",
+            "chunk_size": 100000000
         }
 
         # ----------------Defining Good and Bad Cases---------------- #
@@ -289,7 +300,7 @@ ORDER BY firstseen;"""
         good_input_3 = {
             "airports": {"departure_airport": "KBTR", "arrival_airport": "KDFW"},
             "dates": {"start": 1685577600, "end": 1685836800},
-            "bad_days": [1685577610, 1685577630, 1685577410],
+            "bad_days": [1685577410, 1685577610, 1685577630],
         }
 
         good_output_3 = """\
@@ -299,8 +310,7 @@ SELECT firstseen, lastseen, callsign, icao24, estdepartureairport, estarrivalair
     AND estarrivalairport = 'KDFW'
     AND day >= 1685577600
     AND day <= 1685836800
-    AND day != 1685577410
-AND day != 1685577610
+    AND day != 1685577610
 AND day != 1685577630
 ORDER BY firstseen;"""
 
