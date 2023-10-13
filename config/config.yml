@@ -32,6 +32,14 @@ data-gather:
         bad-days-csv: 'data/flight/bad_days.csv'
         # Size of per chunk of data to gather (in seconds)
         chunk-size: 604800
+        # Time limit in seconds until a retry is required for gathering flights data
+        flight-data-timeout: 300
+        # Number of retries for gathering flight data
+        flight-data-retries: 3
+        # Time limit in seconds until a retry is required for gathering state vectors
+        state-vector-timeout: 300
+        # Number of retries for gathering state vectors
+        state-vector-retries: 3
 
 # All configurations for data compression
 data-compression:

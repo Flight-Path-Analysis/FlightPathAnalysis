@@ -22,11 +22,36 @@ a `Querier` object. Once initialized, the `query_flight_data` and
 OpenSky database.
 """
 import os
+import signal
 import datetime
 import paramiko
 import pandas as pd
 
 from src.backend import utils
+
+def handler(signum, frame):
+    """
+    Signal handler for raising a TimeoutError after a timeout.
+    
+    This function is intended to be used with the signal module to raise
+    a TimeoutError after a certain period of time, interrupting the 
+    program's flow, which can be caught with a try/except block elsewhere
+    in the code. Useful for implementing timeouts on operations that might
+    hang or run indefinitely.
+    
+    Parameters:
+    signum : int
+        The signal number being handled. Generally, this will be signal.SIGALRM.
+    frame : frame
+        The current stack frame at the point the signal occurred. This might be
+        used for more advanced handling scenarios, but it's not used in this
+        basic handler.
+
+    Raises:
+    TimeoutError:
+        Always raised to indicate a timeout scenario.
+    """
+    raise TimeoutError("Operation timed out!")
 
 class Querier:
     """
@@ -186,39 +211,6 @@ baroaltitude, geoaltitude, onground, hour
             'stderr': stderr.read().decode()
         }
 
-    def handle_query(self, airports, dates_unix, bad_days_df):
-        """
-        Manage the query execution by connecting to the client,
-        executing the query, and closing the connection.
-
-        Parameters:
-        - airports (dict): Dictionary containing departure and arrival airports.
-        - dates_unix (dict): Dictionary containing start and end dates in UNIX timestamp format.
-        - bad_days_df (pd.DataFrame): DataFrame containing days
-        (UNIX timestamp) to exclude from query.
-
-        Returns:
-        - dict: Dictionary containing standard output and
-        standard error from the query execution.
-        """
-
-        self.client.connect(
-            self.credentials['hostname'],
-            port=self.credentials['port'],
-            username=self.credentials['username'],
-            password=self.credentials['password']
-        )
-
-        query = self.create_query_command_for_flight_data(
-            airports, dates_unix, bad_days_df['day'].to_list())
-        print(query)
-
-        self.log_verbose(f"Querying: {query}")
-        query_results = self.execute_query(query)
-
-        self.client.close()
-        return query_results
-
     def compute_date_intervals(self, dates_unix):
         """
         Compute date intervals based on the specified Unix start and end dates.
@@ -287,6 +279,75 @@ baroaltitude, geoaltitude, onground, hour
 
         return bad_days_df
 
+    def handle_flight_data_query(self, airports, dates_unix, bad_days_df):
+        """
+        Manage the query execution by connecting to the client,
+        executing the query, and closing the connection.
+
+        Parameters:
+        - airports (dict): Dictionary containing departure and arrival airports.
+        - dates_unix (dict): Dictionary containing start and end dates in UNIX timestamp format.
+        - bad_days_df (pd.DataFrame): DataFrame containing days
+        (UNIX timestamp) to exclude from query.
+
+        Returns:
+        - dict: Dictionary containing standard output and
+        standard error from the query execution.
+        """
+
+        self.client.connect(
+            self.credentials['hostname'],
+            port=self.credentials['port'],
+            username=self.credentials['username'],
+            password=self.credentials['password']
+        )
+
+        query = self.create_query_command_for_flight_data(
+            airports, dates_unix, bad_days_df['day'].to_list())
+
+        self.log_verbose(f"Querying: {query}")
+        query_results = self.execute_query(query)
+
+        self.client.close()
+
+        # Continue querying until successful or all bad days are excluded
+        while "Disk I/O error" in query_results['stderr']:
+            self.log_verbose("Bad day found, trying again.")
+            bad_days_new = pd.DataFrame(
+                {'day':[int(query_results['stderr'].split("\n")[3].split(
+                "day=")[-1].split("/")[0])],
+                 'date_registered':[datetime.datetime.now()]})
+
+            if len(bad_days_df) == 0:
+                bad_days_df = bad_days_new.copy()
+            else:
+                bad_days_df = pd.concat([bad_days_df, bad_days_new])
+            bad_days_df.sort_values('day', inplace=True)
+            bad_days_df.drop_duplicates(['day'], inplace=True)
+            self.log_verbose("Bad Days:")
+            for day in bad_days_df['day'].to_list():
+                self.log_verbose(" - " + datetime.datetime.fromtimestamp(int(day)).strftime(
+                    "%Y-%m-%d HH:MM:SS"))
+
+            if self.bad_days_csv:
+                bad_days_df.to_csv(self.bad_days_csv)
+
+            self.client.connect(
+                self.credentials['hostname'],
+                port=self.credentials['port'],
+                username=self.credentials['username'],
+                password=self.credentials['password']
+            )
+
+            query = self.create_query_command_for_flight_data(
+                airports, dates_unix, bad_days_df['day'].to_list())
+
+            self.log_verbose(f"Querying: {query}")
+            query_results = self.execute_query(query)
+
+            self.client.close()
+        return query_results, bad_days_df
+
     def query_flight_data(self, airports, dates):
         """
         Query flight data from the OpenSky database using the provided client.
@@ -302,6 +363,8 @@ baroaltitude, geoaltitude, onground, hour
         Returns:
         - pd.DataFrame: DataFrame containing the flight data results.
         """
+        # Set the signal handler and a 300-second alarm
+        signal.signal(signal.SIGALRM, handler)
         # If logger is NOT None, checks if it's an isnstance of utils.Logger
         if self.logger and not isinstance(self.logger, utils.Logger):
             raise ValueError("Expected logger to be an instance of utils.Logger")
@@ -334,33 +397,19 @@ baroaltitude, geoaltitude, onground, hour
                 f"Querying data for flights from {airports['departure_airport']} \
 to {airports['arrival_airport']} between the dates {dates_str['start']} and {dates_str['end']}"
 )
+            for _ in range(self.credentials['flight_data_retries']):
+                try:
+                    signal.alarm(self.credentials['flight_data_timeout'])
+                    query_results, bad_days_df = self.handle_flight_data_query(
+                        airports, dates_unix, bad_days_df)
+                    break
+                except TimeoutError:
+                    self.log_verbose("Operation timed out, retrying...")
+                finally:
+                    signal.alarm(0)
 
-            query_results = self.handle_query(airports, dates_unix, bad_days_df)
-
-            # Continue querying until successful or all bad days are excluded
-            while "Disk I/O error" in query_results['stderr']:
-                self.log_verbose("Bad day found, trying again.")
-                bad_days_new = pd.DataFrame(
-                    {'day':[int(query_results['stderr'].split("\n")[3].split(
-                    "day=")[-1].split("/")[0])],
-                     'date_registered':[datetime.datetime.now()]})
-
-                if len(bad_days_df) == 0:
-                    bad_days_df = bad_days_new.copy()
-                else:
-                    bad_days_df = pd.concat([bad_days_df, bad_days_new])
-                bad_days_df.sort_values('day', inplace=True)
-                bad_days_df.drop_duplicates(['day'], inplace=True)
-                print(bad_days_df)
-                self.log_verbose("Bad Days:")
-                for day in bad_days_df['day'].to_list():
-                    self.log_verbose(" - " + datetime.datetime.fromtimestamp(int(day)).strftime(
-                        "%Y-%m-%d HH:MM:SS"))
-
-                if self.bad_days_csv:
-                    bad_days_df.to_csv(self.bad_days_csv)
-
-                query_results = self.handle_query(airports, dates_unix, bad_days_df)
+            query_results, bad_days_df = self.handle_flight_data_query(
+                        airports, dates_unix, bad_days_df)
 
             if results_df is not None:
                 if len(results_df) == 0:
@@ -373,43 +422,9 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
                 results_df = utils.parse_to_dataframe(query_results['stdout'])
 
         return results_df
-
-    def query_state_vectors(self, icao24, start_time, end_time):
-        """
-        Query state vectors data from the OpenSky database for a specific aircraft.
-
-        Parameters:
-        - icao24 (str): ICAO 24-bit address of the aircraft.
-        - start_time: Start time, can be a date string, datetime.datetime object,
-        UNIX integer or string, or datetime.date object.
-        - end_time: End time, can be a date string, datetime.datetime object,
-        UNIX integer or string, or datetime.date object.
-
-        Returns:
-        - pd.DataFrame: DataFrame containing the state vectors results.
-        """
-
-        # If logger is NOT None, checks if it's an isnstance of utils.Logger
-        if self.logger and not isinstance(self.logger, utils.Logger):
-            raise ValueError("Expected logger to be an instance of utils.Logger")
-
-        # Convert dates to UNIX timestamps
-        times_unix = {'start': utils.to_unix_timestamp(start_time),
-                     'end': utils.to_unix_timestamp(end_time)}
-        times_str = {'start': datetime.datetime.fromtimestamp(times_unix['start']).strftime(
-            "%Y-%m-%d"),
-                    'end': datetime.datetime.fromtimestamp(times_unix['end']).strftime(
-            "%Y-%m-%d")}
-
-        # Array to save the days that return an error from the query
+    
+    def handle_state_vector_query(self, icao24, start_time, end_time):
         bad_hours = []
-
-        # Logs the initial query
-        self.log_verbose(
-            f"Querying data for statevectors for ICAO24 {icao24} \
-between the times {times_str['start']} and {times_str['end']}"
-        )
-
         # Connecting to client
         self.client.connect(
             self.credentials['hostname'],
@@ -420,7 +435,7 @@ between the times {times_str['start']} and {times_str['end']}"
 
         # Building the query
         query = self.create_query_command_for_state_vectors(
-            icao24, times_unix, bad_hours)
+            icao24, {'start': start_time, 'end': end_time}, bad_hours)
 
         # Logs query
         self.log_verbose(f"Querying: {query}")
@@ -465,4 +480,50 @@ between the times {times_str['start']} and {times_str['end']}"
             query_results['stderr'] = query_results['stderr'].read().decode()
 
             self.client.close()
+        return query_results
+
+    def query_state_vectors(self, icao24, start_time, end_time):
+        """
+        Query state vectors data from the OpenSky database for a specific aircraft.
+
+        Parameters:
+        - icao24 (str): ICAO 24-bit address of the aircraft.
+        - start_time: Start time, can be a date string, datetime.datetime object,
+        UNIX integer or string, or datetime.date object.
+        - end_time: End time, can be a date string, datetime.datetime object,
+        UNIX integer or string, or datetime.date object.
+
+        Returns:
+        - pd.DataFrame: DataFrame containing the state vectors results.
+        """
+
+        # If logger is NOT None, checks if it's an isnstance of utils.Logger
+        if self.logger and not isinstance(self.logger, utils.Logger):
+            raise ValueError("Expected logger to be an instance of utils.Logger")
+
+        # Convert dates to UNIX timestamps
+        times_unix = {'start': utils.to_unix_timestamp(start_time),
+                     'end': utils.to_unix_timestamp(end_time)}
+        times_str = {'start': datetime.datetime.fromtimestamp(times_unix['start']).strftime(
+            "%Y-%m-%d"),
+                    'end': datetime.datetime.fromtimestamp(times_unix['end']).strftime(
+            "%Y-%m-%d")}
+
+        # Logs the initial query
+        self.log_verbose(
+            f"Querying data for statevectors for ICAO24 {icao24} \
+between the times {times_str['start']} and {times_str['end']}"
+        )
+
+        for _ in range(self.credentials['state_vector_retries']):
+            try:
+                signal.alarm(self.credentials['flight_data_timeout'])
+                query_results = self.handle_state_vector_query(
+                    icao24, times_unix['start'], times_unix['end'])
+                break
+            except TimeoutError:
+                self.log_verbose("Operation timed out, retrying...")
+            finally:
+                signal.alarm(0)
+
         return utils.parse_to_dataframe(query_results['stdout'])

@@ -11,8 +11,8 @@ Thumbs.db
 prototyping/**/*.*
 !prototyping/**/
 !prototyping/prototyping.ipynb
-data/**/*.*
-!data/**
+data/flight/*
+data/weather/*
 **/.ipynb_checkpoints
 /src/backend/opensky-api
 bkp

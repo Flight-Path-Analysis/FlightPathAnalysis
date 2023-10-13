@@ -34,7 +34,11 @@ def test_query_flight_data():
             "password": "password",
             "hostname": "ssh.mock.fake",
             "port": "0",
-            "chunk_size": 100000000
+            "chunk_size": 100000000,
+            "flight_data_retries": 3,
+            "flight_data_timeout": 300,
+            "state_vector_retries": 3,
+            "state_vector_timeout": 300
         }
 
         expected_df = pd.DataFrame(
@@ -154,7 +158,11 @@ def test_query_flight_data():
             "password": "password",
             "hostname": "ssh.mock.fake",
             "port": "0",
-            "chunk_size": 100000000
+            "chunk_size": 100000000,
+            "flight_data_retries": 3,
+            "flight_data_timeout": 300,
+            "state_vector_retries": 3,
+            "state_vector_timeout": 300
         }
 
         output_bad_1 = pytest.raises(ValueError, match="Invalid Username")
@@ -166,7 +174,11 @@ def test_query_flight_data():
             "password": "pswrd",
             "hostname": "ssh.mock.fake",
             "port": "0",
-            "chunk_size": 100000000
+            "chunk_size": 100000000,
+            "flight_data_retries": 3,
+            "flight_data_timeout": 300,
+            "state_vector_retries": 3,
+            "state_vector_timeout": 300
         }
 
         output_bad_2 = pytest.raises(ValueError, match="Invalid Password")
@@ -178,7 +190,11 @@ def test_query_flight_data():
             "password": "password",
             "hostname": "ssh.mock.fake",
             "port": "1",
-            "chunk_size": 100000000
+            "chunk_size": 100000000,
+            "flight_data_retries": 3,
+            "flight_data_timeout": 300,
+            "state_vector_retries": 3,
+            "state_vector_timeout": 300
         }
 
         output_bad_3 = pytest.raises(ValueError, match="Invalid Port")
@@ -190,7 +206,11 @@ def test_query_flight_data():
             "password": "password",
             "hostname": "mock.fake",
             "port": "0",
-            "chunk_size": 100000000
+            "chunk_size": 100000000,
+            "flight_data_retries": 3,
+            "flight_data_timeout": 300,
+            "state_vector_retries": 3,
+            "state_vector_timeout": 300
         }
 
         output_bad_4 = pytest.raises(ValueError, match="Invalid Hostname")
