@@ -70,6 +70,10 @@ CREDENTIALS['hostname'] = CONFIG['data-gather']['flights']['hostname']
 CREDENTIALS['port'] = CONFIG['data-gather']['flights']['port']
 CREDENTIALS['bad_days_csv'] = CONFIG['data-gather']['flights']['bad-days-csv']
 CREDENTIALS['chunk_size'] = CONFIG['data-gather']['flights']['chunk-size']
+CREDENTIALS['flight_data_timeout'] = CONFIG['data-gather']['flights']['flight-data-timeout']
+CREDENTIALS['state_vector_timeout'] = CONFIG['data-gather']['flights']['flight-data-timeout']
+CREDENTIALS['flight_data_retries'] = CONFIG['data-gather']['flights']['flight-data-retries']
+CREDENTIALS['state_vector_retries'] = CONFIG['data-gather']['flights']['flight-data-retries']
 
 # Creates an instane of the Querier class used for querying the opensky database
 OPENSKY_QUERIER = opensky_query.Querier(

@@ -424,6 +424,29 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
         return results_df
     
     def handle_state_vector_query(self, icao24, start_time, end_time):
+        """
+        Execute a query to retrieve state vectors and handle query-related issues, 
+        such as disk I/O errors caused by bad hours in the query timeframe, 
+        by re-querying excluding identified problematic hours.
+
+        The method attempts to retrieve state vectors for a specific aircraft
+        (identified by its ICAO24 address) during a particular time range,
+        while managing connection, query execution, and disconnection from the client.
+        If a disk I/O error occurs (often signifying an issue with specific hours 
+        in the database), the method identifies the problematic hour(s),
+        logs them as "bad hours", and re-executes the query excluding these hours.
+
+        Parameters:
+        - icao24 (str): The ICAO24 address of the aircraft.
+        - start_time (int): The UNIX timestamp representing the start of the time range.
+        - end_time (int): The UNIX timestamp representing the end of the time range.
+
+        Returns:
+        - dict: A dictionary containing 'stdout' and 'stderr' from the query execution.
+                'stdout' contains the query results, and 'stderr' contains error messages
+                generated during the query, if any.
+        """
+
         bad_hours = []
         # Connecting to client
         self.client.connect(
