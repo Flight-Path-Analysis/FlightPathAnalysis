@@ -19,3 +19,4 @@ bkp
 config/opensky_login.yml
 logs/*
 !logs/.gitkeep
+data/flight/bad_days.csv
