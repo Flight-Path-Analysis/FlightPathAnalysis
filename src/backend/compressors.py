@@ -80,6 +80,16 @@ class SplineCompressor:
             "s-base-precision"
         ]
         self.logger = logger
+        
+    def treat_heading_data(self, heading_y, thresh = 330):
+        for i, curr_y in enumerate(heading_y[1:], 1):
+            prev_y = heading_y[i-1]
+            if curr_y - prev_y > 330:
+                heading_y[i] = curr_y - 360
+            if prev_y - curr_y > 330:
+                heading_y[i] = curr_y + 360
+        return heading_y
+                
 
     def best_spline_s(self, xs, ys):
         """
@@ -285,6 +295,7 @@ class SplineCompressor:
                 got {type(independent_variable)} instead."
             )
 
+        dataframe['heading'] = self.treat_heading_data(dataframe['heading'].to_list())
         # Store the name of the independent variable and some run parameters in the metadata
         metadata["x_variable"] = independent_variable
         metadata["max_error"] = self.max_error
