@@ -81,7 +81,7 @@ class SplineCompressor:
         ]
         self.logger = logger
         
-    def treat_heading_data(self, heading_y, thresh = 330):
+    def treat_angular_data(self, heading_y, thresh = 330):
         for i, curr_y in enumerate(heading_y[1:], 1):
             prev_y = heading_y[i-1]
             if curr_y - prev_y > 330:
@@ -294,8 +294,8 @@ class SplineCompressor:
                 f"Expected independent_variable to be a string, \
                 got {type(independent_variable)} instead."
             )
-
-        dataframe['heading'] = self.treat_heading_data(dataframe['heading'].to_list())
+        dataframe['lat'] = self.treat_angular_data(dataframe['lat'].to_list())
+        dataframe['heading'] = self.treat_angular_data(dataframe['heading'].to_list())
         # Store the name of the independent variable and some run parameters in the metadata
         metadata["x_variable"] = independent_variable
         metadata["max_error"] = self.max_error
@@ -335,10 +335,10 @@ class SplineCompressor:
 
             # Store min-max details in the metadata
             metadata[y_variable] = {
-                "xmin": x_min,
-                "xmax": x_max,
-                "ymin": y_min,
-                "ymax": y_max,
+                "xmin": float(x_min),
+                "xmax": float(x_max),
+                "ymin": float(y_min),
+                "ymax": float(y_max),
                 'best_s': float(best_s)
             }
 
@@ -452,7 +452,7 @@ class SplineCompressor:
             - dict: A dictionary containing the min and max values for x and y.
             """
             return {
-                "xmin": self.x_min,
-                "xmax": self.x_max,
-                "ymin": self.y_min,
-                "ymax": self.y_max}
+                "xmin": float(self.x_min),
+                "xmax": float(self.x_max),
+                "ymin": float(self.y_min),
+                "ymax": float(self.y_max)}
