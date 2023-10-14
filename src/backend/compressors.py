@@ -72,6 +72,7 @@ class SplineCompressor:
         - logger (utils.Logger): Logging utility for the compressor (default is None).
         """
         self.config = config
+        self.degree = config["data-compression"]["spline-compressor"]['degree']
         self.max_error = config["data-compression"]["spline-compressor"]["max-error"]
         self.s_min_precision = config["data-compression"]["spline-compressor"][
             "s-minimum-precision"
@@ -257,8 +258,8 @@ class SplineCompressor:
         coeffs = metadata[column]["coefficients"]
 
         # Get boundary knots for scipy's BSpline
-        forscipyknots = newknots(knots, 3)
-        spline = BSpline(forscipyknots, coeffs, 3)
+        forscipyknots = newknots(knots, self.degree)
+        spline = BSpline(forscipyknots, coeffs, self.degree)
 
         # Return an instance of ScaledSpline
         return self.ScaledSpline(spline,

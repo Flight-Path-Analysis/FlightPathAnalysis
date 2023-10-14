@@ -51,6 +51,8 @@ data-compression:
         s-minimum-precision: 0.001
         # Initial precisionf step of s, must be large
         s-base-precision: 10000000000000000
+        # Degree of the spline to be used
+        degree: 2
         
 # All configurations for logging messages
 log:
