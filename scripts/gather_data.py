@@ -38,6 +38,8 @@ Note:
 # sys.path.append('.')
 import yaml
 import numpy as np
+import pandas as pd
+import os
 
 from src.backend import opensky_query
 from src.backend import utils
@@ -81,7 +83,7 @@ OPENSKY_QUERIER = opensky_query.Querier(
     logger=LOGGER)
 
 # Creates an instance of the SplineCompressor class.
-COMPRESSOR = compressors.SplineCompressor(CONFIG)
+COMPRESSOR = compressors.CsvCompressor(CONFIG, logger=LOGGER)
 
 # List of columns of state_vectors to be compressed.
 COLUMNS_COMPRESS = ['lat', 'lon', 'baroaltitude', 'geoaltitude', 'heading', 'velocity']
@@ -91,11 +93,18 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
     end_date = CONFIG['data-gather']['flights']['end-date']
     departure_airport = airport_route[0]
     arrival_airport = airport_route[1]
-    flights = OPENSKY_QUERIER.query_flight_data(
-        {'departure_airport': departure_airport,
-        'arrival_airport': arrival_airport},
-        {'start': start_date,
-        'end': end_date})
+    flights_data_id = f"{departure_airport}_{arrival_airport}_{start_date}_{end_date}"
+    if not CONFIG['data-gather']['flights']['continue-from-last'] or \
+        f'{flights_data_id}.csv' not in os.listdir(
+            f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}"):
+        flights = OPENSKY_QUERIER.query_flight_data(
+            {'departure_airport': departure_airport,
+            'arrival_airport': arrival_airport},
+            {'start': start_date,
+            'end': end_date})
+        flights.to_csv(f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}/{flights_data_id}.csv")
+    else:
+        flights = pd.read_csv(f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}/{flights_data_id}.csv", index_col=0)
 
     for i, flight in flights.iterrows():
         icao24 = flight['icao24']
@@ -105,41 +114,32 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
         estarrivalairport = flight['estarrivalairport']
         flight_id = f"{icao24}_{firstseen}_{lastseen}_\
 {estdepartureairport}_{estarrivalairport}"
+        if not CONFIG['data-gather']['flights']['continue-from-last'] or \
+            f'{flight_id}.csv' not in os.listdir(
+                f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}"):
+            state_vectors = OPENSKY_QUERIER.query_state_vectors(
+                            icao24,
+                            firstseen,
+                            lastseen)
+            # Cleaning Data
+            cols_to_check = ['time',
+                            'lat',
+                            'lon',
+                            'velocity',
+                            'heading',
+                            'baroaltitude',
+                            'geoaltitude',
+                            'hour']
+            for col in cols_to_check:
+                state_vectors[col] = state_vectors[col].apply(
+                    lambda x: np.nan if isinstance(x, str) else x)
+            state_vectors.dropna(inplace=True)
 
-        state_vectors = OPENSKY_QUERIER.query_state_vectors(
-                        icao24,
-                        firstseen,
-                        lastseen)
-        # Cleaning Data
-        cols_to_check = ['time',
-                         'lat',
-                         'lon',
-                         'velocity',
-                         'heading',
-                         'baroaltitude',
-                         'geoaltitude',
-                         'hour']
-        for col in cols_to_check:
-            state_vectors[col] = state_vectors[col].apply(
-                lambda x: np.nan if isinstance(x, str) else x)
-        state_vectors.dropna(inplace=True)
+            cols_to_check = ['lat', 'lon']
+            state_vectors = state_vectors.drop_duplicates(subset=cols_to_check, keep='first')
 
-        cols_to_check = ['lat', 'lon']
-        state_vectors = state_vectors.drop_duplicates(subset=cols_to_check, keep='first')
+            # Encoding data
+            COMPRESSOR.encode_from_dataframe_to_file(
+                state_vectors, flight_id)
 
-        # Encoding data
-        metadata = COMPRESSOR.encode_from_dataframe(state_vectors, 'time', COLUMNS_COMPRESS)
-        # Setting flight_id in the metadata
-        metadata['flight_id'] = flight_id
-        # Computes the compression factor achieved as x_old/x_new.
-        compression_factor = COMPRESSOR.compute_compression_factor(
-            state_vectors['time'].values,
-            state_vectors[COLUMNS_COMPRESS].values,
-            metadata)
-        print(f"Compression Factor: {compression_factor}")
-        # Turns dictionary data into the yaml format
-        yaml_data = yaml.dump(metadata, default_flow_style=None)
-        # Saves it to a yaml file
-        with open(f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}/{flight_id}.yml", 'w'
-                  , encoding="utf-8") as f:
-            f.write(yaml_data)
+print('Done!')
