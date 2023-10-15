@@ -38,6 +38,8 @@ import yaml
 from scipy.interpolate import UnivariateSpline, BSpline
 import numpy as np
 from pympler import asizeof
+import csv
+import pandas as pd
 
 class SplineCompressor:
     """
@@ -116,15 +118,15 @@ class SplineCompressor:
         # Increase 's' until we achieve the desired uncertainty or until s_precision is too small
         while s_precision > self.s_min_precision:
             s += s_precision
-            spline = UnivariateSpline(xs, ys, s=s)
+            spline = UnivariateSpline(xs, ys, s=s, k=self.degree)
             err = self.compute_spline_uncertainty(xs, ys, spline)
-            #             print(err, self.max_error, s, s_precision)
+            # print(err, self.max_error, s, s_precision)
             if err > self.max_error:
                 s -= s_precision
                 s_precision /= 2
 
         # Compute L for the best s so far
-        spline = UnivariateSpline(xs, ys, s=s)
+        spline = UnivariateSpline(xs, ys, s=s, k=self.degree)
 
         # Get the number of coefficients and knots for current 's'
         complexity = len(spline.get_coeffs()) + len(spline.get_knots())
@@ -134,7 +136,7 @@ class SplineCompressor:
         while s_precision > self.s_min_precision:
             s -= s_precision
             if s >= 0:
-                spline = UnivariateSpline(xs, ys, s=s)
+                spline = UnivariateSpline(xs, ys, s=s, k=self.degree)
                 l = len(spline.get_coeffs()) + len(spline.get_knots())
             else:
                 l = np.inf
@@ -193,7 +195,7 @@ class SplineCompressor:
         if not metadata:
             metadata = {}
         best_s = self.best_spline_s(xs, ys)
-        spline = UnivariateSpline(xs, ys, s=best_s)
+        spline = UnivariateSpline(xs, ys, s=best_s, k=self.degree)
         metadata = self.encode_spline(spline, metadata=metadata)
         return metadata
 
@@ -308,6 +310,9 @@ class SplineCompressor:
         x_max = max(original_xs)
         xs = (original_xs - x_min) / (x_max - x_min)
 
+        original_xs_new = np.arange(original_xs[0], original_xs[-1] + 1)
+        xs_new = (original_xs_new - x_min) / (x_max - x_min)
+
         # Convert the dependent variable to a list format if it's a single string
         if isinstance(dependent_variable, str):
             dependent_variable = [dependent_variable]
@@ -317,6 +322,7 @@ class SplineCompressor:
                 "All items in dependent_variable should be strings.")
 
         metadata["y_variables"] = dependent_variable
+        metadata["compressor"] = 'SplineCompressor'
         # Loop through each dependent variable for encoding
         for y_variable in dependent_variable:
             # Ensure current dependent variable is a string
@@ -330,9 +336,10 @@ class SplineCompressor:
             y_min = min(original_ys)
             y_max = max(original_ys)
             ys = (original_ys - y_min) / (y_max - y_min)
+            ys_new = np.interp(xs_new, xs, ys)
 
             # Compute the best smoothing factor 's' for the spline
-            best_s = self.best_spline_s(xs, ys)
+            best_s = self.best_spline_s(xs_new, ys_new)
 
             # Store min-max details in the metadata
             metadata[y_variable] = {
@@ -346,7 +353,7 @@ class SplineCompressor:
             # Optimize and encode the spline, updating the metadata for the
             # current dependent variable
             metadata[y_variable] = self.optimize_and_encode_spline(
-                xs, ys, metadata=metadata[y_variable])
+                xs_new, ys_new, metadata=metadata[y_variable])
 
         return metadata
 
@@ -457,3 +464,112 @@ class SplineCompressor:
                 "xmax": float(self.x_max),
                 "ymin": float(self.y_min),
                 "ymax": float(self.y_max)}
+
+class CsvCompressor:
+    """
+    A class for compressing and decompressing CSV files.
+
+    The CsvCompressor class provides functionalities to encode dataframes
+    into CSV files and decode them back into dataframes. It supports
+    reindexing and interpolating missing values in the 'time' column
+    for sequential data representation.
+
+    Attributes:
+    - config (dict): A dictionary containing configuration information.
+    - logger (Logger, optional): An optional logger object to log messages.
+
+    Methods:
+    - log_verbose(message): Logs a provided message if a logger is configured.
+    - encode_from_dataframe_to_file(dataframe, flight_id): Encodes a dataframe into a CSV file.
+    - decode_to_dataframe_from_file(filename): Decodes a CSV file back into a dataframe with interpolated values.
+    """
+    def __init__(self, config, logger = None):
+        """
+        Initialize a CsvCompressor object.
+
+        This method initializes a CsvCompressor object with the provided configuration
+        and logger (if any).
+
+        Parameters:
+        - config (dict): A dictionary containing configuration information.
+        - logger (Logger, optional): A logger object to be used for logging messages.
+        """
+        self.config = config
+        self.logger = logger
+
+    def log_verbose(self, message):
+        """
+        Log a message if a logger is configured.
+
+        This method conditionally logs messages based on whether `self.logger`
+        is configured. If `self.logger` is not None, the provided message is
+        logged. This allows for flexible logging control within classes and functions,
+        enabling logging when needed without modifying the internal logging calls.
+
+        Parameters:
+        - message (str): The message to be logged.
+        """
+        if self.logger:
+            self.logger.log(message)
+
+    def encode_from_dataframe_to_file(self, dataframe, flight_id):
+        """
+        Encode a dataframe to a CSV file.
+
+        This method encodes a provided dataframe to a CSV file with the provided metadata
+        and flight ID.
+
+        Parameters:
+        - dataframe (pandas.DataFrame): The dataframe to be encoded.
+        - flight_id (str): The ID of the flight being encoded.
+
+        Returns:
+        - compression_ratio (float): The compression ratio achieved.
+        """
+        columns = ['time', 'lat', 'lon', 'baroaltitude', 'geoaltitude', 'heading', 'velocity']
+        self.log_verbose(f'CSV Encoding data for {flight_id}')
+        
+        df_interp = {'time':np.linspace(
+            dataframe['time'].iloc[0],
+            dataframe['time'].iloc[-1], 
+            num=self.config['data-compression']['csv-compressor']['num-points'],
+            endpoint=True)}
+        for i, col in enumerate(columns[1:]):
+            df_interp[col] = np.interp(df_interp['time'], dataframe['time'], dataframe[col])
+            if col == 'lat' or col == 'heading':
+                df_interp[col] = np.mod(df_interp[col], 360)
+        df_interp = pd.DataFrame(df_interp)
+        temp_csv = f"{self.config['data-gather']['flights']['out-dir']}/{flight_id}.csv"
+        df_interp[columns].to_csv(temp_csv)
+
+        # Calculate and return compression ratio
+        compression_ratio = asizeof.asizeof(dataframe) / asizeof.asizeof(df_interp)
+
+        self.log_verbose(f'Compression ratio achieved: {compression_ratio}')
+
+    def decode_to_dataframe_from_file(self, filename):
+        """
+        Decode a CSV file to a dataframe.
+
+        This method decodes a provided CSV file to a dataframe, separating metadata
+        and data rows.
+
+        Parameters:
+        - filename (str): The name of the file to be decoded.
+
+        Returns:
+        - dataframe (pandas.DataFrame): The decoded dataframe.
+        """
+        columns = ['time', 'lat', 'lon', 'baroaltitude', 'geoaltitude', 'heading', 'velocity']
+
+        self.log_verbose(f'CSV Decoding data from {filename}')
+
+        # Read the CSV, separating metadata and dataframe
+        dataframe = pd.read_csv(filename, index_col=0)[columns]
+        df_new = {'time':list(range(int(dataframe['time'].iloc[0]), int(dataframe['time'].iloc[-1]) + 1))}
+        for col in columns[1:]:
+            df_new[col] = np.interp(df_new['time'], dataframe['time'], dataframe[col])
+            if col == 'lat' or col == 'heading':
+                df_new[col] = np.mod(df_new[col], 360)
+
+        return pd.DataFrame(df_new)

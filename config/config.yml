@@ -21,8 +21,7 @@ data-gather:
         port: 2230
         # Routes of interest to be downloaded on the data gathering step
         routes-of-interest: [
-        ['KBTR','KDFW'],
-        ['KJFK','EGLL'],
+        ['KJFK','KLAX']
         ]
         # Starting date of flights of interest
         start-date: '2023-01-01'
@@ -40,13 +39,20 @@ data-gather:
         state-vector-timeout: 300
         # Number of retries for gathering state vectors
         state-vector-retries: 3
+        # Continue data gather from last attemp. If False, it will start from scratch
+        continue-from-last: True
 
 # All configurations for data compression
 data-compression:
+    # Which compressor to use in the data
+    compressor: 'csv-compressor'
+    
+    csv-compressor:
+        num-points: 1000
     # Configurations defining the spline-compression algorithm
     spline-compressor:
         # The Maximum alowed percentage error between the data and the interpolation
-        max-error: 0.001
+        max-error: 0.01
         # Smallest precision step to which narrow down s
         s-minimum-precision: 0.001
         # Initial precisionf step of s, must be large

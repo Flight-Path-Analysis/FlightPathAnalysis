@@ -26,6 +26,7 @@ import signal
 import datetime
 import paramiko
 import pandas as pd
+import time
 
 from src.backend import utils
 
@@ -112,6 +113,41 @@ class Querier:
         if self.logger:
             self.logger.log(message)
 
+    # class OpenSkyQuery:
+    #     """
+    #     A class for connecting to the OpenSky Network API and querying flight data.
+
+    #     Attributes:
+    #     - credentials (dict): A dictionary containing the login credentials for the OpenSky API.
+    #     - client (paramiko.SSHClient): A client object for connecting to the OpenSky API.
+    #     """
+
+    #     def __init__(self, credentials):
+    #         self.credentials = credentials
+    #         self.client = paramiko.SSHClient()
+    #         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    def connect(self):
+        """
+        Connects to the OpenSky API using the provided credentials.
+
+        Raises:
+        - TimeoutError: If the connection times out after the specified number of retries.
+        """
+        for _ in range(self.credentials['flight_data_retries']):
+            try:
+                time.sleep(10)
+                self.client.connect(
+                    self.credentials['hostname'],
+                    port=self.credentials['port'],
+                    username=self.credentials['username'],
+                    password=self.credentials['password']
+                )
+                break
+            except TimeoutError:
+                self.log_verbose("Operation timed out, retrying...")
+            finally:
+                signal.alarm(0)
     def create_query_command_for_flight_data(
         self,
         airports,
@@ -294,13 +330,8 @@ baroaltitude, geoaltitude, onground, hour
         - dict: Dictionary containing standard output and
         standard error from the query execution.
         """
-
-        self.client.connect(
-            self.credentials['hostname'],
-            port=self.credentials['port'],
-            username=self.credentials['username'],
-            password=self.credentials['password']
-        )
+        time.sleep(10)
+        self.connect()
 
         query = self.create_query_command_for_flight_data(
             airports, dates_unix, bad_days_df['day'].to_list())
@@ -331,13 +362,8 @@ baroaltitude, geoaltitude, onground, hour
 
             if self.bad_days_csv:
                 bad_days_df.to_csv(self.bad_days_csv)
-
-            self.client.connect(
-                self.credentials['hostname'],
-                port=self.credentials['port'],
-                username=self.credentials['username'],
-                password=self.credentials['password']
-            )
+            time.sleep(10)
+            self.connect()
 
             query = self.create_query_command_for_flight_data(
                 airports, dates_unix, bad_days_df['day'].to_list())
@@ -449,12 +475,8 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
 
         bad_hours = []
         # Connecting to client
-        self.client.connect(
-            self.credentials['hostname'],
-            port=self.credentials['port'],
-            username=self.credentials['username'],
-            password=self.credentials['password'],
-        )
+        time.sleep(10)
+        self.connect()
 
         # Building the query
         query = self.create_query_command_for_state_vectors(
@@ -486,12 +508,9 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
                 date_str = datetime.datetime.fromtimestamp(hour).strftime("%Y-%m-%d")
                 self.log_verbose(f" - {date_str}")
             # Re-query
-            self.client.connect(
-                self.credentials['hostname'],
-                port=self.credentials['port'],
-                username=self.credentials['username'],
-                password=self.credentials['password']
-            )
+            time.sleep(10)
+            self.connect()
+
             query = self.create_query_command_for_state_vectors(
                 icao24, {'start': start_time, 'end': end_time}, bad_hours)
 
