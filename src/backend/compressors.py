@@ -38,8 +38,8 @@ import yaml
 from scipy.interpolate import UnivariateSpline, BSpline
 import numpy as np
 from pympler import asizeof
-import csv
 import pandas as pd
+
 
 class SplineCompressor:
     """
@@ -74,7 +74,7 @@ class SplineCompressor:
         - logger (utils.Logger): Logging utility for the compressor (default is None).
         """
         self.config = config
-        self.degree = config["data-compression"]["spline-compressor"]['degree']
+        self.degree = config["data-compression"]["spline-compressor"]["degree"]
         self.max_error = config["data-compression"]["spline-compressor"]["max-error"]
         self.s_min_precision = config["data-compression"]["spline-compressor"][
             "s-minimum-precision"
@@ -83,16 +83,26 @@ class SplineCompressor:
             "s-base-precision"
         ]
         self.logger = logger
-        
-    def treat_angular_data(self, heading_y, thresh = 330):
+
+    def treat_angular_data(self, heading_y, thresh=330):
+        """
+        Treats angular data by adjusting any sudden jumps in
+        heading_y values greater than the threshold.
+
+        Parameters:
+        heading_y (list): A list of heading values in degrees.
+        thresh (int): The threshold value for sudden jumps in heading_y values. Defaults to 330.
+
+        Returns:
+        list: The treated list of heading values.
+        """
         for i, curr_y in enumerate(heading_y[1:], 1):
-            prev_y = heading_y[i-1]
-            if curr_y - prev_y > 330:
+            prev_y = heading_y[i - 1]
+            if curr_y - prev_y > thresh:
                 heading_y[i] = curr_y - 360
-            if prev_y - curr_y > 330:
+            if prev_y - curr_y > thresh:
                 heading_y[i] = curr_y + 360
         return heading_y
-                
 
     def best_spline_s(self, xs, ys):
         """
@@ -264,14 +274,13 @@ class SplineCompressor:
         spline = BSpline(forscipyknots, coeffs, self.degree)
 
         # Return an instance of ScaledSpline
-        return self.ScaledSpline(spline,
-                                 {'x_min': x_min,
-                                  'x_max': x_max,
-                                  'y_min': y_min,
-                                  'y_max': y_max})
+        return self.ScaledSpline(
+            spline, {"x_min": x_min, "x_max": x_max, "y_min": y_min, "y_max": y_max}
+        )
 
     def encode_from_dataframe(
-            self, dataframe, independent_variable, dependent_variable, metadata=None):
+        self, dataframe, independent_variable, dependent_variable, metadata=None
+    ):
         """
         Encode data from a dataframe based on the provided independent and dependent variables.
 
@@ -297,20 +306,21 @@ class SplineCompressor:
                 f"Expected independent_variable to be a string, \
                 got {type(independent_variable)} instead."
             )
-        dataframe['lat'] = self.treat_angular_data(dataframe['lat'].to_list())
-        dataframe['heading'] = self.treat_angular_data(dataframe['heading'].to_list())
+        dataframe["lat"] = self.treat_angular_data(dataframe["lat"].to_list())
+        dataframe["heading"] = self.treat_angular_data(dataframe["heading"].to_list())
         # Store the name of the independent variable and some run parameters in the metadata
         metadata["x_variable"] = independent_variable
         metadata["max_error"] = self.max_error
         metadata["s_min_precision"] = self.s_min_precision
 
         # Normalize and scale the independent variable data
-        original_xs = dataframe[independent_variable].values
-        x_min = min(original_xs)
-        x_max = max(original_xs)
-        xs = (original_xs - x_min) / (x_max - x_min)
+        x_min = min(dataframe[independent_variable].values)
+        x_max = max(dataframe[independent_variable].values)
+        xs = (dataframe[independent_variable].values - x_min) / (x_max - x_min)
 
-        original_xs_new = np.arange(original_xs[0], original_xs[-1] + 1)
+        original_xs_new = np.arange(
+            dataframe[independent_variable].values[0],
+            dataframe[independent_variable].values[-1] + 1)
         xs_new = (original_xs_new - x_min) / (x_max - x_min)
 
         # Convert the dependent variable to a list format if it's a single string
@@ -318,11 +328,10 @@ class SplineCompressor:
             dependent_variable = [dependent_variable]
         # Check if all elements in the dependent variable list are strings
         elif not all(isinstance(y_var, str) for y_var in dependent_variable):
-            raise ValueError(
-                "All items in dependent_variable should be strings.")
+            raise ValueError("All items in dependent_variable should be strings.")
 
         metadata["y_variables"] = dependent_variable
-        metadata["compressor"] = 'SplineCompressor'
+        metadata["compressor"] = "SplineCompressor"
         # Loop through each dependent variable for encoding
         for y_variable in dependent_variable:
             # Ensure current dependent variable is a string
@@ -332,14 +341,9 @@ class SplineCompressor:
                 )
 
             # Normalize and scale the dependent variable data
-            original_ys = dataframe[y_variable].values
-            y_min = min(original_ys)
-            y_max = max(original_ys)
-            ys = (original_ys - y_min) / (y_max - y_min)
-            ys_new = np.interp(xs_new, xs, ys)
-
-            # Compute the best smoothing factor 's' for the spline
-            best_s = self.best_spline_s(xs_new, ys_new)
+            y_min = min(dataframe[y_variable].values)
+            y_max = max(dataframe[y_variable].values)
+            ys_new = np.interp(xs_new, xs, (dataframe[y_variable].values - y_min) / (y_max - y_min))
 
             # Store min-max details in the metadata
             metadata[y_variable] = {
@@ -347,22 +351,20 @@ class SplineCompressor:
                 "xmax": float(x_max),
                 "ymin": float(y_min),
                 "ymax": float(y_max),
-                'best_s': float(best_s)
+                "best_s": float(self.best_spline_s(xs_new, ys_new)),
             }
 
             # Optimize and encode the spline, updating the metadata for the
             # current dependent variable
             metadata[y_variable] = self.optimize_and_encode_spline(
-                xs_new, ys_new, metadata=metadata[y_variable])
+                xs_new, ys_new, metadata=metadata[y_variable]
+            )
 
         return metadata
 
     def encode_from_dataframe_to_file(
-            self,
-            dataframe,
-            independent_variable,
-            dependent_variable,
-            metadata=None):
+        self, dataframe, independent_variable, dependent_variable, metadata=None
+    ):
         """
         Encode the data from a dataframe into a metadata dictionary based on
         the provided independent and dependent variables, and then save the
@@ -384,7 +386,8 @@ class SplineCompressor:
             metadata = {}
         # Encode the data from the dataframe into a metadata dictionary
         metadata = self.encode_from_dataframe(
-            dataframe, independent_variable, dependent_variable, metadata=metadata)
+            dataframe, independent_variable, dependent_variable, metadata=metadata
+        )
 
         flight_id = metadata["flight_id"]
         filename = f"{flight_id}.yml"
@@ -422,10 +425,10 @@ class SplineCompressor:
 
         def __init__(self, spline, ranges):
             self.spline = spline
-            self.x_min = ranges['x_min']
-            self.x_max = ranges['x_max']
-            self.y_min = ranges['y_min']
-            self.y_max = ranges['y_max']
+            self.x_min = ranges["x_min"]
+            self.x_max = ranges["x_max"]
+            self.y_min = ranges["y_min"]
+            self.y_max = ranges["y_max"]
 
         def __call__(self, x):
             """
@@ -463,7 +466,9 @@ class SplineCompressor:
                 "xmin": float(self.x_min),
                 "xmax": float(self.x_max),
                 "ymin": float(self.y_min),
-                "ymax": float(self.y_max)}
+                "ymax": float(self.y_max),
+            }
+
 
 class CsvCompressor:
     """
@@ -481,9 +486,11 @@ class CsvCompressor:
     Methods:
     - log_verbose(message): Logs a provided message if a logger is configured.
     - encode_from_dataframe_to_file(dataframe, flight_id): Encodes a dataframe into a CSV file.
-    - decode_to_dataframe_from_file(filename): Decodes a CSV file back into a dataframe with interpolated values.
+    - decode_to_dataframe_from_file(filename): Decodes a CSV file back 
+    into a dataframe with interpolated values.
     """
-    def __init__(self, config, logger = None):
+
+    def __init__(self, config, logger=None):
         """
         Initialize a CsvCompressor object.
 
@@ -526,17 +533,30 @@ class CsvCompressor:
         Returns:
         - compression_ratio (float): The compression ratio achieved.
         """
-        columns = ['time', 'lat', 'lon', 'baroaltitude', 'geoaltitude', 'heading', 'velocity']
-        self.log_verbose(f'CSV Encoding data for {flight_id}')
-        
-        df_interp = {'time':np.linspace(
-            dataframe['time'].iloc[0],
-            dataframe['time'].iloc[-1], 
-            num=self.config['data-compression']['csv-compressor']['num-points'],
-            endpoint=True)}
-        for i, col in enumerate(columns[1:]):
-            df_interp[col] = np.interp(df_interp['time'], dataframe['time'], dataframe[col])
-            if col == 'lat' or col == 'heading':
+        columns = [
+            "time",
+            "lat",
+            "lon",
+            "baroaltitude",
+            "geoaltitude",
+            "heading",
+            "velocity",
+        ]
+        self.log_verbose(f"CSV Encoding data for {flight_id}")
+
+        df_interp = {
+            "time": np.linspace(
+                dataframe["time"].iloc[0],
+                dataframe["time"].iloc[-1],
+                num=self.config["data-compression"]["csv-compressor"]["num-points"],
+                endpoint=True,
+            )
+        }
+        for col in columns[1:]:
+            df_interp[col] = np.interp(
+                df_interp["time"], dataframe["time"], dataframe[col]
+            )
+            if col in ("lat", "heading"):
                 df_interp[col] = np.mod(df_interp[col], 360)
         df_interp = pd.DataFrame(df_interp)
         temp_csv = f"{self.config['data-gather']['flights']['out-dir']}/{flight_id}.csv"
@@ -545,7 +565,7 @@ class CsvCompressor:
         # Calculate and return compression ratio
         compression_ratio = asizeof.asizeof(dataframe) / asizeof.asizeof(df_interp)
 
-        self.log_verbose(f'Compression ratio achieved: {compression_ratio}')
+        self.log_verbose(f"Compression ratio achieved: {compression_ratio}")
 
     def decode_to_dataframe_from_file(self, filename):
         """
@@ -560,16 +580,30 @@ class CsvCompressor:
         Returns:
         - dataframe (pandas.DataFrame): The decoded dataframe.
         """
-        columns = ['time', 'lat', 'lon', 'baroaltitude', 'geoaltitude', 'heading', 'velocity']
+        columns = [
+            "time",
+            "lat",
+            "lon",
+            "baroaltitude",
+            "geoaltitude",
+            "heading",
+            "velocity",
+        ]
 
-        self.log_verbose(f'CSV Decoding data from {filename}')
+        self.log_verbose(f"CSV Decoding data from {filename}")
 
         # Read the CSV, separating metadata and dataframe
         dataframe = pd.read_csv(filename, index_col=0)[columns]
-        df_new = {'time':list(range(int(dataframe['time'].iloc[0]), int(dataframe['time'].iloc[-1]) + 1))}
+        df_new = {
+            "time": list(
+                range(
+                    int(dataframe["time"].iloc[0]), int(dataframe["time"].iloc[-1]) + 1
+                )
+            )
+        }
         for col in columns[1:]:
-            df_new[col] = np.interp(df_new['time'], dataframe['time'], dataframe[col])
-            if col == 'lat' or col == 'heading':
+            df_new[col] = np.interp(df_new["time"], dataframe["time"], dataframe[col])
+            if col in ("lat", "heading"):
                 df_new[col] = np.mod(df_new[col], 360)
 
         return pd.DataFrame(df_new)

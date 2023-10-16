@@ -24,22 +24,23 @@ OpenSky database.
 import os
 import signal
 import datetime
+import time
 import paramiko
 import pandas as pd
-import time
 
 from src.backend import utils
+
 
 def handler(signum, frame):
     """
     Signal handler for raising a TimeoutError after a timeout.
-    
+
     This function is intended to be used with the signal module to raise
-    a TimeoutError after a certain period of time, interrupting the 
+    a TimeoutError after a certain period of time, interrupting the
     program's flow, which can be caught with a try/except block elsewhere
     in the code. Useful for implementing timeouts on operations that might
     hang or run indefinitely.
-    
+
     Parameters:
     signum : int
         The signal number being handled. Generally, this will be signal.SIGALRM.
@@ -53,6 +54,7 @@ def handler(signum, frame):
         Always raised to indicate a timeout scenario.
     """
     raise TimeoutError("Operation timed out!")
+
 
 class Querier:
     """
@@ -88,8 +90,8 @@ class Querier:
         self.credentials = credentials
         self.client = paramiko.SSHClient()
 
-        if 'bad_days_csv' in credentials:
-            self.bad_days_csv = credentials['bad_days_csv']
+        if "bad_days_csv" in credentials:
+            self.bad_days_csv = credentials["bad_days_csv"]
         else:
             self.bad_days_csv = None
 
@@ -134,26 +136,24 @@ class Querier:
         Raises:
         - TimeoutError: If the connection times out after the specified number of retries.
         """
-        for _ in range(self.credentials['flight_data_retries']):
+        for _ in range(self.credentials["flight_data_retries"]):
             try:
                 time.sleep(10)
                 self.client.connect(
-                    self.credentials['hostname'],
-                    port=self.credentials['port'],
-                    username=self.credentials['username'],
-                    password=self.credentials['password']
+                    self.credentials["hostname"],
+                    port=self.credentials["port"],
+                    username=self.credentials["username"],
+                    password=self.credentials["password"],
                 )
                 break
             except TimeoutError:
                 self.log_verbose("Operation timed out, retrying...")
             finally:
                 signal.alarm(0)
+
     def create_query_command_for_flight_data(
-        self,
-        airports,
-        dates,
-        bad_days,
-        limit=None):
+        self, airports, dates, bad_days, limit=None
+    ):
         """
         Generate the SQL query command for querying flight data from the OpenSky database.
 
@@ -169,10 +169,10 @@ class Querier:
         - str: SQL query command.
         """
 
-        departure_airport = airports['departure_airport']
-        arrival_airport = airports['arrival_airport']
-        start_date_unix = dates['start']
-        end_date_unix = dates['end']
+        departure_airport = airports["departure_airport"]
+        arrival_airport = airports["arrival_airport"]
+        start_date_unix = dates["start"]
+        end_date_unix = dates["end"]
         # Begin SQL command
         query = f"""SELECT firstseen, lastseen, callsign, icao24, \
 estdepartureairport, estarrivalairport, day
@@ -196,7 +196,8 @@ estdepartureairport, estarrivalairport, day
         return query
 
     def create_query_command_for_state_vectors(
-        self, icao24, times, bad_hours, limit=None):
+        self, icao24, times, bad_hours, limit=None
+    ):
         """
         Generate the SQL query command for querying state vectors data from the OpenSky database.
 
@@ -210,8 +211,8 @@ estdepartureairport, estarrivalairport, day
         Returns:
         - str: SQL query command.
         """
-        start_time_unix = times['start']
-        end_time_unix = times['end']
+        start_time_unix = times["start"]
+        end_time_unix = times["end"]
         query = f"""SELECT time, lat, lon, velocity, heading, \
 baroaltitude, geoaltitude, onground, hour
     FROM state_vectors_data4
@@ -242,10 +243,7 @@ baroaltitude, geoaltitude, onground, hour
         """
 
         _, stdout, stderr = self.client.exec_command(f"-q {query}")
-        return {
-            'stdout': stdout.read().decode(),
-            'stderr': stderr.read().decode()
-        }
+        return {"stdout": stdout.read().decode(), "stderr": stderr.read().decode()}
 
     def compute_date_intervals(self, dates_unix):
         """
@@ -262,30 +260,35 @@ baroaltitude, geoaltitude, onground, hour
 
         Note:
         The returned list of timestamps represents the intervals that the data fetching
-        will occur. If the total time range is less than or equal to 
+        will occur. If the total time range is less than or equal to
         `self.credentials['chunk_size']`, the function returns the original start and
         end timestamps. Otherwise, the function returns evenly spaced timestamps at
-        intervals of `self.credentials['chunk_size']` between the original start and 
+        intervals of `self.credentials['chunk_size']` between the original start and
         end timestamps.
         """
-        if dates_unix['end'] - dates_unix['start'] <= self.credentials['chunk_size']:
-            dates = [dates_unix['start'], dates_unix['end']]
+        if dates_unix["end"] - dates_unix["start"] <= self.credentials["chunk_size"]:
+            dates = [dates_unix["start"], dates_unix["end"]]
         else:
-            dates = list(range(dates_unix['start'], dates_unix['end'],
-                               self.credentials['chunk_size']))
-            if dates[-1] != dates_unix['end']:
-                dates += [dates_unix['end']]
+            dates = list(
+                range(
+                    dates_unix["start"],
+                    dates_unix["end"],
+                    self.credentials["chunk_size"],
+                )
+            )
+            if dates[-1] != dates_unix["end"]:
+                dates += [dates_unix["end"]]
         return dates
 
     def initialize_bad_days_df(self):
         """
-        Initialize a DataFrame to keep track of days for which query attempts 
+        Initialize a DataFrame to keep track of days for which query attempts
         have resulted in errors.
 
         Two scenarios are considered:
-        - If `self.bad_days_csv` exists and points to a valid path, the function 
+        - If `self.bad_days_csv` exists and points to a valid path, the function
         reads it into a DataFrame. Only the entries from the last week are retained.
-        - If `self.bad_days_csv` doesn't point to a valid path, an empty 
+        - If `self.bad_days_csv` doesn't point to a valid path, an empty
         DataFrame is created with columns 'day' and 'date_registered'.
 
         The resulting DataFrame is then deduplicated based on the 'day' column.
@@ -296,22 +299,27 @@ baroaltitude, geoaltitude, onground, hour
         'day' and the timestamp when it was registered under 'date_registered'.
 
         Note:
-        'day': Refers to Unix timestamps of days when an error was encountered 
+        'day': Refers to Unix timestamps of days when an error was encountered
         during data retrieval.
-        'date_registered': The datetime object representing when the 
+        'date_registered': The datetime object representing when the
         error day was logged.
         """
         # Array to save the days that return an error from the query
         if self.bad_days_csv and os.path.exists(self.bad_days_csv):
-            bad_days_df = pd.read_csv(self.bad_days_csv, index_col = 0,
-                                      parse_dates=['date_registered'])
+            bad_days_df = pd.read_csv(
+                self.bad_days_csv, index_col=0, parse_dates=["date_registered"]
+            )
 
-            bad_days_df = bad_days_df[bad_days_df['date_registered'].apply(
-                lambda x: (datetime.datetime.now() - x) < datetime.timedelta(weeks = 1))]
+            bad_days_df = bad_days_df[
+                bad_days_df["date_registered"].apply(
+                    lambda x: (datetime.datetime.now() - x)
+                    < datetime.timedelta(weeks=1)
+                )
+            ]
         else:
-            bad_days_df = pd.DataFrame({'day':[], 'date_registered':[]})
+            bad_days_df = pd.DataFrame({"day": [], "date_registered": []})
 
-        bad_days_df.drop_duplicates(['day'], inplace=True)
+        bad_days_df.drop_duplicates(["day"], inplace=True)
 
         return bad_days_df
 
@@ -334,7 +342,8 @@ baroaltitude, geoaltitude, onground, hour
         self.connect()
 
         query = self.create_query_command_for_flight_data(
-            airports, dates_unix, bad_days_df['day'].to_list())
+            airports, dates_unix, bad_days_df["day"].to_list()
+        )
 
         self.log_verbose(f"Querying: {query}")
         query_results = self.execute_query(query)
@@ -342,23 +351,36 @@ baroaltitude, geoaltitude, onground, hour
         self.client.close()
 
         # Continue querying until successful or all bad days are excluded
-        while "Disk I/O error" in query_results['stderr']:
+        while "Disk I/O error" in query_results["stderr"]:
             self.log_verbose("Bad day found, trying again.")
             bad_days_new = pd.DataFrame(
-                {'day':[int(query_results['stderr'].split("\n")[3].split(
-                "day=")[-1].split("/")[0])],
-                 'date_registered':[datetime.datetime.now()]})
+                {
+                    "day": [
+                        int(
+                            query_results["stderr"]
+                            .split("\n")[3]
+                            .split("day=")[-1]
+                            .split("/")[0]
+                        )
+                    ],
+                    "date_registered": [datetime.datetime.now()],
+                }
+            )
 
             if len(bad_days_df) == 0:
                 bad_days_df = bad_days_new.copy()
             else:
                 bad_days_df = pd.concat([bad_days_df, bad_days_new])
-            bad_days_df.sort_values('day', inplace=True)
-            bad_days_df.drop_duplicates(['day'], inplace=True)
+            bad_days_df.sort_values("day", inplace=True)
+            bad_days_df.drop_duplicates(["day"], inplace=True)
             self.log_verbose("Bad Days:")
-            for day in bad_days_df['day'].to_list():
-                self.log_verbose(" - " + datetime.datetime.fromtimestamp(int(day)).strftime(
-                    "%Y-%m-%d HH:MM:SS"))
+            for day in bad_days_df["day"].to_list():
+                self.log_verbose(
+                    " - "
+                    + datetime.datetime.fromtimestamp(int(day)).strftime(
+                        "%Y-%m-%d HH:MM:SS"
+                    )
+                )
 
             if self.bad_days_csv:
                 bad_days_df.to_csv(self.bad_days_csv)
@@ -366,7 +388,8 @@ baroaltitude, geoaltitude, onground, hour
             self.connect()
 
             query = self.create_query_command_for_flight_data(
-                airports, dates_unix, bad_days_df['day'].to_list())
+                airports, dates_unix, bad_days_df["day"].to_list()
+            )
 
             self.log_verbose(f"Querying: {query}")
             query_results = self.execute_query(query)
@@ -398,36 +421,46 @@ baroaltitude, geoaltitude, onground, hour
         bad_days_df = self.initialize_bad_days_df()
 
         # Convert dates to UNIX timestamps
-        dates_unix = {'start': utils.to_unix_timestamp(dates['start']),
-                     'end':utils.to_unix_timestamp(dates['end'])}
+        dates_unix = {
+            "start": utils.to_unix_timestamp(dates["start"]),
+            "end": utils.to_unix_timestamp(dates["end"]),
+        }
 
-        dates_str = {'start':datetime.datetime.fromtimestamp(dates_unix['start']).strftime(
-            "%Y-%m-%d HH:MM:SS"),
-                    'end':datetime.datetime.fromtimestamp(dates_unix['end']).strftime(
-            "%Y-%m-%d HH:MM:SS")}
+        dates_str = {
+            "start": datetime.datetime.fromtimestamp(dates_unix["start"]).strftime(
+                "%Y-%m-%d HH:MM:SS"
+            ),
+            "end": datetime.datetime.fromtimestamp(dates_unix["end"]).strftime(
+                "%Y-%m-%d HH:MM:SS"
+            ),
+        }
 
         dates = self.compute_date_intervals(dates_unix)
 
         results_df = None
         for date_start, date_end in zip(dates[:-1], dates[1:]):
-            dates_unix = {'start': date_start,
-                     'end':date_end}
+            dates_unix = {"start": date_start, "end": date_end}
 
-            dates_str = {'start':datetime.datetime.fromtimestamp(dates_unix['start']).strftime(
-                "%Y-%m-%d HH:MM:SS"),
-                        'end':datetime.datetime.fromtimestamp(dates_unix['end']).strftime(
-                "%Y-%m-%d HH:MM:SS")}
+            dates_str = {
+                "start": datetime.datetime.fromtimestamp(dates_unix["start"]).strftime(
+                    "%Y-%m-%d HH:MM:SS"
+                ),
+                "end": datetime.datetime.fromtimestamp(dates_unix["end"]).strftime(
+                    "%Y-%m-%d HH:MM:SS"
+                ),
+            }
 
             # Logs the initial query
             self.log_verbose(
                 f"Querying data for flights from {airports['departure_airport']} \
 to {airports['arrival_airport']} between the dates {dates_str['start']} and {dates_str['end']}"
-)
-            for _ in range(self.credentials['flight_data_retries']):
+            )
+            for _ in range(self.credentials["flight_data_retries"]):
                 try:
-                    signal.alarm(self.credentials['flight_data_timeout'])
+                    signal.alarm(self.credentials["flight_data_timeout"])
                     query_results, bad_days_df = self.handle_flight_data_query(
-                        airports, dates_unix, bad_days_df)
+                        airports, dates_unix, bad_days_df
+                    )
                     break
                 except TimeoutError:
                     self.log_verbose("Operation timed out, retrying...")
@@ -435,30 +468,32 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
                     signal.alarm(0)
 
             query_results, bad_days_df = self.handle_flight_data_query(
-                        airports, dates_unix, bad_days_df)
+                airports, dates_unix, bad_days_df
+            )
 
             if results_df is not None:
                 if len(results_df) == 0:
-                    results_df = utils.parse_to_dataframe(query_results['stdout'])
-                elif len(utils.parse_to_dataframe(query_results['stdout'])) != 0:
-                    results_df = pd.concat([results_df, utils.parse_to_dataframe(
-                        query_results['stdout'])])
+                    results_df = utils.parse_to_dataframe(query_results["stdout"])
+                elif len(utils.parse_to_dataframe(query_results["stdout"])) != 0:
+                    results_df = pd.concat(
+                        [results_df, utils.parse_to_dataframe(query_results["stdout"])]
+                    )
 
             else:
-                results_df = utils.parse_to_dataframe(query_results['stdout'])
+                results_df = utils.parse_to_dataframe(query_results["stdout"])
 
         return results_df
-    
+
     def handle_state_vector_query(self, icao24, start_time, end_time):
         """
-        Execute a query to retrieve state vectors and handle query-related issues, 
-        such as disk I/O errors caused by bad hours in the query timeframe, 
+        Execute a query to retrieve state vectors and handle query-related issues,
+        such as disk I/O errors caused by bad hours in the query timeframe,
         by re-querying excluding identified problematic hours.
 
         The method attempts to retrieve state vectors for a specific aircraft
         (identified by its ICAO24 address) during a particular time range,
         while managing connection, query execution, and disconnection from the client.
-        If a disk I/O error occurs (often signifying an issue with specific hours 
+        If a disk I/O error occurs (often signifying an issue with specific hours
         in the database), the method identifies the problematic hour(s),
         logs them as "bad hours", and re-executes the query excluding these hours.
 
@@ -480,28 +515,36 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
 
         # Building the query
         query = self.create_query_command_for_state_vectors(
-            icao24, {'start': start_time, 'end': end_time}, bad_hours)
+            icao24, {"start": start_time, "end": end_time}, bad_hours
+        )
 
         # Logs query
         self.log_verbose(f"Querying: {query}")
 
         # Execute the query
         query_results = {}
-        _, query_results['stdout'], query_results['stderr'] \
-        = self.client.exec_command(f"-q {query}")
+        _, query_results["stdout"], query_results["stderr"] = self.client.exec_command(
+            f"-q {query}"
+        )
 
         # Reads and decodes query results
-        query_results['stdout'] = query_results['stdout'].read().decode()
-        query_results['stderr'] = query_results['stderr'].read().decode()
+        query_results["stdout"] = query_results["stdout"].read().decode()
+        query_results["stderr"] = query_results["stderr"].read().decode()
 
         # Closing client
         self.client.close()
 
         # Continue querying until successful or all bad hours are excluded
-        while "Disk I/O error" in query_results['stderr']:
+        while "Disk I/O error" in query_results["stderr"]:
             self.log_verbose("Bad hour found, trying again.")
-            bad_hours += [int(query_results['stderr'].split("\n")[3].split(
-                "hour=")[-1].split("/")[0])]
+            bad_hours += [
+                int(
+                    query_results["stderr"]
+                    .split("\n")[3]
+                    .split("hour=")[-1]
+                    .split("/")[0]
+                )
+            ]
             bad_hours = sorted(bad_hours)
             self.log_verbose("Bad Hours:")
             for hour in bad_hours:
@@ -512,14 +555,18 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
             self.connect()
 
             query = self.create_query_command_for_state_vectors(
-                icao24, {'start': start_time, 'end': end_time}, bad_hours)
+                icao24, {"start": start_time, "end": end_time}, bad_hours
+            )
 
             self.log_verbose(f"Querying: {query}")
-            _, query_results['stdout'], query_results['stderr'] \
-            = self.client.exec_command(f"-q {query}")
+            (
+                _,
+                query_results["stdout"],
+                query_results["stderr"],
+            ) = self.client.exec_command(f"-q {query}")
 
-            query_results['stdout'] = query_results['stdout'].read().decode()
-            query_results['stderr'] = query_results['stderr'].read().decode()
+            query_results["stdout"] = query_results["stdout"].read().decode()
+            query_results["stderr"] = query_results["stderr"].read().decode()
 
             self.client.close()
         return query_results
@@ -544,12 +591,18 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
             raise ValueError("Expected logger to be an instance of utils.Logger")
 
         # Convert dates to UNIX timestamps
-        times_unix = {'start': utils.to_unix_timestamp(start_time),
-                     'end': utils.to_unix_timestamp(end_time)}
-        times_str = {'start': datetime.datetime.fromtimestamp(times_unix['start']).strftime(
-            "%Y-%m-%d"),
-                    'end': datetime.datetime.fromtimestamp(times_unix['end']).strftime(
-            "%Y-%m-%d")}
+        times_unix = {
+            "start": utils.to_unix_timestamp(start_time),
+            "end": utils.to_unix_timestamp(end_time),
+        }
+        times_str = {
+            "start": datetime.datetime.fromtimestamp(times_unix["start"]).strftime(
+                "%Y-%m-%d"
+            ),
+            "end": datetime.datetime.fromtimestamp(times_unix["end"]).strftime(
+                "%Y-%m-%d"
+            ),
+        }
 
         # Logs the initial query
         self.log_verbose(
@@ -557,15 +610,16 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
 between the times {times_str['start']} and {times_str['end']}"
         )
 
-        for _ in range(self.credentials['state_vector_retries']):
+        for _ in range(self.credentials["state_vector_retries"]):
             try:
-                signal.alarm(self.credentials['flight_data_timeout'])
+                signal.alarm(self.credentials["flight_data_timeout"])
                 query_results = self.handle_state_vector_query(
-                    icao24, times_unix['start'], times_unix['end'])
+                    icao24, times_unix["start"], times_unix["end"]
+                )
                 break
             except TimeoutError:
                 self.log_verbose("Operation timed out, retrying...")
             finally:
                 signal.alarm(0)
 
-        return utils.parse_to_dataframe(query_results['stdout'])
+        return utils.parse_to_dataframe(query_results["stdout"])
