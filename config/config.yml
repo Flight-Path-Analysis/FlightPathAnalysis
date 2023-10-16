@@ -46,8 +46,9 @@ data-gather:
 data-compression:
     # Which compressor to use in the data
     compressor: 'csv-compressor'
-    
+    # Configurations defining the CSV-compression algorithm
     csv-compressor:
+        # Number of interpolated points to be saved in the csv compression
         num-points: 1000
     # Configurations defining the spline-compression algorithm
     spline-compressor:
