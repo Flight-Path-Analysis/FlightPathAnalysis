@@ -103,47 +103,55 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
             'arrival_airport': arrival_airport},
             {'start': start_date,
             'end': end_date})
+        flights['attempts'] = [0]*len(flights)
+        flights['loaded'] = [False]*len(flights)
         flights.to_csv(f"{directory}/{flights_data_id}.csv")
     else:
         flights = pd.read_csv(f"{directory}/{flights_data_id}.csv", index_col=0)
 
-    for i, flight in flights.iterrows():
-        icao24 = flight['icao24']
-        firstseen = flight['firstseen']
-        lastseen = flight['lastseen']
-        estdepartureairport = flight['estdepartureairport']
-        estarrivalairport = flight['estarrivalairport']
-        flight_id = f"{icao24}_{firstseen}_{lastseen}_\
+    while len(flights[(flights['loaded'] == False) & (flights['attempts'] < 3)]) > 0:
+        for i, flight in flights[(flights['loaded'] == False) & (flights['attempts'] < 3)].iterrows():
+            icao24 = flight['icao24']
+            firstseen = flight['firstseen']
+            lastseen = flight['lastseen']
+            estdepartureairport = flight['estdepartureairport']
+            estarrivalairport = flight['estarrivalairport']
+            flight_id = f"{icao24}_{firstseen}_{lastseen}_\
 {estdepartureairport}_{estarrivalairport}"
-        filename = f"{directory}/state_vectors/{flight_id}.csv"
-        if not CONFIG['data-gather']['flights']['continue-from-last'] or \
-            f'{flight_id}.csv' not in os.listdir(
-                f"{directory}/state_vectors/"):
-            state_vectors = OPENSKY_QUERIER.query_state_vectors(
-                            icao24,
-                            firstseen,
-                            lastseen)
-            # Cleaning Data
-            cols_to_check = ['time',
-                            'lat',
-                            'lon',
-                            'velocity',
-                            'heading',
-                            'baroaltitude',
-                            'geoaltitude',
-                            'hour']
-            for col in cols_to_check:
-                state_vectors[col] = state_vectors[col].apply(
-                    lambda x: np.nan if isinstance(x, str) else x)
-            state_vectors.dropna(inplace=True)
+            filename = f"{directory}/state_vectors/{flight_id}.csv"
 
-            cols_to_check = ['lat', 'lon']
-            state_vectors = state_vectors.drop_duplicates(subset=cols_to_check, keep='first')
+            flights.at[i, 'attempts'] += 1
+            flights.to_csv(f"{directory}/{flights_data_id}.csv")
+            try:
+                state_vectors = OPENSKY_QUERIER.query_state_vectors(
+                                icao24,
+                                firstseen,
+                                lastseen)
+                # Cleaning Data
+                cols_to_check = ['time',
+                                'lat',
+                                'lon',
+                                'velocity',
+                                'heading',
+                                'baroaltitude',
+                                'geoaltitude',
+                                'hour']
+                for col in cols_to_check:
+                    state_vectors[col] = state_vectors[col].apply(
+                        lambda x: np.nan if isinstance(x, str) else x)
+                state_vectors.dropna(inplace=True)
 
-            # Encoding data
-            if not os.path.exists(f'{directory}/state_vectors/'):
-                os.makedirs(f'{directory}/state_vectors/')
-            COMPRESSOR.encode_from_dataframe_to_file(
-                state_vectors, filename)
+                cols_to_check = ['lat', 'lon']
+                state_vectors = state_vectors.drop_duplicates(subset=cols_to_check, keep='first')
+
+                # Encoding data
+                if not os.path.exists(f'{directory}/state_vectors/'):
+                    os.makedirs(f'{directory}/state_vectors/')
+                COMPRESSOR.encode_from_dataframe_to_file(
+                    state_vectors, filename)
+                flights.at[i, 'loaded'] = True
+                flights.to_csv(f"{directory}/{flights_data_id}.csv")
+            except:
+                pass
 
 print('Done!')
