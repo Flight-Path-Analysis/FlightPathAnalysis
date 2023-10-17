@@ -60,7 +60,25 @@ data-compression:
         s-base-precision: 10000000000000000
         # Degree of the spline to be used
         degree: 2
-        
+
+# Configurations for the statistical analysis of the data 
+statistics:
+    # Routes to be analyzed
+    routes-to-analyze: [
+    ['KJFK','KLAX']
+    ]
+
+# configurations for the plotting of the data and analysis
+plotting:
+    # x and y dimensions of the plot figures
+    fig-size: [10, 6.17]
+    # Font size of the axis
+    axis-fontsize: 20
+    # Font size of the tick labels
+    tick-fontsize: 15
+    # Font size of the title
+    title-fontsize: 25
+    
 # All configurations for logging messages
 log:
     # Directory where log files are located from the root directory
