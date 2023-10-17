@@ -78,7 +78,25 @@ plotting:
     tick-fontsize: 15
     # Font size of the title
     title-fontsize: 25
-    
+    # Font size of the legend
+    legend-fontsize: 15
+    # Default color map to be used
+    cmap: 'cool'
+    # Number of points to be used in lines
+    point-precision: 1000
+    # Expectation value to be used when plotting
+    expectation-measure: 'mean'
+    # Deviation measure to be used when plotting
+    deviation-measure: 'std'
+    # Deviation values to be used when plotting.
+        # If std, numbers indicate how many standard deviations to plot ([1,2,3] -> plots 1, 2, and 3 sigmas)
+        # if pct, indicated which percentiles to plot ([50, 75, 90] -> plots 50th, 75th, and 90th percentiles)
+    deviation-values: [1, 2, 3]
+    # Extent of min and max values longitude and latitude (respectively) to be plotted: [min_lon, max_lon, min_lat, max_lat]
+    # If left blank or None, it will be automatically calculated for the corresponding data.
+        # United States: [-121, -71, 13, 66]
+    map-extent: [-121, -71, 13, 66]
+
 # All configurations for logging messages
 log:
     # Directory where log files are located from the root directory

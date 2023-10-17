@@ -548,7 +548,7 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
             bad_hours = sorted(bad_hours)
             self.log_verbose("Bad Hours:")
             for hour in bad_hours:
-                date_str = datetime.datetime.fromtimestamp(hour).strftime("%Y-%m-%d")
+                date_str = datetime.datetime.fromtimestamp(hour).strftime("%Y-%m-%d %H %M %S")
                 self.log_verbose(f" - {date_str}")
             # Re-query
             time.sleep(10)
@@ -597,10 +597,10 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
         }
         times_str = {
             "start": datetime.datetime.fromtimestamp(times_unix["start"]).strftime(
-                "%Y-%m-%d"
+                "%Y-%m-%d %H:%M:%S"
             ),
             "end": datetime.datetime.fromtimestamp(times_unix["end"]).strftime(
-                "%Y-%m-%d"
+                "%Y-%m-%d %H:%M:%S"
             ),
         }
 
