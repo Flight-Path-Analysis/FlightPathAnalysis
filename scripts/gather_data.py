@@ -94,17 +94,18 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
     departure_airport = airport_route[0]
     arrival_airport = airport_route[1]
     flights_data_id = f"{departure_airport}_{arrival_airport}_{start_date}_{end_date}"
+    directory = f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}/\
+{departure_airport}_{arrival_airport}/"
     if not CONFIG['data-gather']['flights']['continue-from-last'] or \
-        f'{flights_data_id}.csv' not in os.listdir(
-            f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}"):
+        f'{flights_data_id}.csv' not in os.listdir(directory):
         flights = OPENSKY_QUERIER.query_flight_data(
             {'departure_airport': departure_airport,
             'arrival_airport': arrival_airport},
             {'start': start_date,
             'end': end_date})
-        flights.to_csv(f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}/{flights_data_id}.csv")
+        flights.to_csv(f"{directory}/{flights_data_id}.csv")
     else:
-        flights = pd.read_csv(f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}/{flights_data_id}.csv", index_col=0)
+        flights = pd.read_csv(f"{directory}/{flights_data_id}.csv", index_col=0)
 
     for i, flight in flights.iterrows():
         icao24 = flight['icao24']
@@ -114,9 +115,10 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
         estarrivalairport = flight['estarrivalairport']
         flight_id = f"{icao24}_{firstseen}_{lastseen}_\
 {estdepartureairport}_{estarrivalairport}"
+        filename = f"{directory}/state_vectors/{flight_id}.csv"
         if not CONFIG['data-gather']['flights']['continue-from-last'] or \
             f'{flight_id}.csv' not in os.listdir(
-                f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}"):
+                f"{directory}/state_vectors/"):
             state_vectors = OPENSKY_QUERIER.query_state_vectors(
                             icao24,
                             firstseen,
@@ -139,7 +141,9 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
             state_vectors = state_vectors.drop_duplicates(subset=cols_to_check, keep='first')
 
             # Encoding data
+            if not os.path.exists(f'{directory}/state_vectors/'):
+                os.makedirs(f'{directory}/state_vectors/')
             COMPRESSOR.encode_from_dataframe_to_file(
-                state_vectors, flight_id)
+                state_vectors, filename)
 
 print('Done!')

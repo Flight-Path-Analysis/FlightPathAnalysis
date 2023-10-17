@@ -519,7 +519,7 @@ class CsvCompressor:
         if self.logger:
             self.logger.log(message)
 
-    def encode_from_dataframe_to_file(self, dataframe, flight_id):
+    def encode_from_dataframe_to_file(self, dataframe, filename):
         """
         Encode a dataframe to a CSV file.
 
@@ -542,7 +542,7 @@ class CsvCompressor:
             "heading",
             "velocity",
         ]
-        self.log_verbose(f"CSV Encoding data for {flight_id}")
+        self.log_verbose(f"CSV Encoding data for {filename.split('/')[-1]}")
 
         df_interp = {
             "time": np.linspace(
@@ -559,7 +559,7 @@ class CsvCompressor:
             if col in ("lat", "heading"):
                 df_interp[col] = np.mod(df_interp[col], 360)
         df_interp = pd.DataFrame(df_interp)
-        temp_csv = f"{self.config['data-gather']['flights']['out-dir']}/{flight_id}.csv"
+        temp_csv = f"{filename}"
         df_interp[columns].to_csv(temp_csv)
 
         # Calculate and return compression ratio
