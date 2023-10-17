@@ -443,10 +443,10 @@ baroaltitude, geoaltitude, onground, hour
 
             dates_str = {
                 "start": datetime.datetime.fromtimestamp(dates_unix["start"]).strftime(
-                    "%Y-%m-%d HH:MM:SS"
+                    "%Y-%m-%d %H:%M:%S"
                 ),
                 "end": datetime.datetime.fromtimestamp(dates_unix["end"]).strftime(
-                    "%Y-%m-%d HH:MM:SS"
+                    "%Y-%m-%d %H:%M:%S"
                 ),
             }
 
