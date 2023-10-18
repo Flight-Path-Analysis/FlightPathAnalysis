@@ -4,7 +4,7 @@ base-configs:
     root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
     # root-directory: 'C:\Users\andre\Dropbox\Personal Projects\FlightPathAnalysis'
     # Tag for current run for log files
-    tag: 'KJFK-KLAX_data_gather'
+    tag: 'KLAX-KJFK_KJFK-EGLL_EGLL-KJFK_data_gather'
     # File containing the credentials for OpenSky database
     opensky-credentials: 'config/opensky_login.yml'
     # FIle containing the credentials for the weather database
@@ -43,7 +43,11 @@ data-gather:
         # Number of retries for gathering state vectors
         state-vector-retries: 3
         # Continue data gather from last attemp. If False, it will start from scratch
-        continue-from-last: True
+        continue-from-last: False
+        # How close to the airports the flight must start/end for it to be valid
+        coordinate-distance-thresh: 0.12
+        # List of airports to be used in the data gathering step
+        airport-list-csv: 'data/flight/airport_database.csv'
 
 # All configurations for data compression
 data-compression:
