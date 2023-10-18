@@ -43,9 +43,9 @@ data-gather:
         # Number of retries for gathering state vectors
         state-vector-retries: 3
         # Continue data gather from last attemp. If False, it will start from scratch
-        continue-from-last: False
+        continue-from-last: True
         # How close to the airports the flight must start/end for it to be valid
-        coordinate-distance-thresh: 0.12
+        coordinate-distance-thresh: 0.2
         # List of airports to be used in the data gathering step
         airport-list-csv: 'data/flight/airport_database.csv'
 
@@ -90,7 +90,7 @@ plotting:
     # Default color map to be used (all options here: https://matplotlib.org/stable/users/explain/colors/colormaps.html)
     cmap: 'cool'
     # Number of points to be used in lines
-    point-precision: 200
+    point-precision: 100
     # Expectation value to be used when plotting
     expectation-measure: 'mean'
     # Deviation measure to be used when plotting
