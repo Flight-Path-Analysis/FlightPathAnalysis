@@ -2,6 +2,7 @@
 base-configs:
     # Root directory of where the repo is located
     root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
+    # root-directory: 'C:\Users\andre\Dropbox\Personal Projects\FlightPathAnalysis'
     # Tag for current run for log files
     tag: 'KJFK-KLAX_data_gather'
     # File containing the credentials for OpenSky database
@@ -21,7 +22,9 @@ data-gather:
         port: 2230
         # Routes of interest to be downloaded on the data gathering step
         routes-of-interest: [
-        ['KJFK','KLAX']
+        ['KLAX','KJFK'],
+        ['KJFK','EGLL'],
+        ['EGLL','KJFK']
         ]
         # Starting date of flights of interest
         start-date: '2023-01-01'
@@ -83,7 +86,7 @@ plotting:
     # Default color map to be used
     cmap: 'cool'
     # Number of points to be used in lines
-    point-precision: 1000
+    point-precision: 200
     # Expectation value to be used when plotting
     expectation-measure: 'mean'
     # Deviation measure to be used when plotting
@@ -95,7 +98,7 @@ plotting:
     # Extent of min and max values longitude and latitude (respectively) to be plotted: [min_lon, max_lon, min_lat, max_lat]
     # If left blank or None, it will be automatically calculated for the corresponding data.
         # United States: [-121, -71, 13, 66]
-    map-extent: [-121, -71, 13, 66]
+    map-extent: [-123, -70, 13, 66]
 
 # All configurations for logging messages
 log:

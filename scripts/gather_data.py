@@ -105,6 +105,10 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
                              CONFIG['data-gather']['flights']['out-dir'],
                              f'{departure_airport}_{arrival_airport}')
     csv_path = os.path.join(directory, f'{flights_data_id}.csv')
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    if not os.path.exists(os.path.join(directory, 'state_vectors')):
+        os.makedirs(os.path.join(directory, 'state_vectors'))
     if not CONFIG['data-gather']['flights']['continue-from-last'] or \
         f'{flights_data_id}.csv' not in os.listdir(directory):
         flights = OPENSKY_QUERIER.query_flight_data(
@@ -114,9 +118,9 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
             'end': end_date})
         flights['attempts'] = [0]*len(flights)
         flights['loaded'] = [False]*len(flights)
+        flights.index = range(len(flights))
         flights.to_csv(csv_path)
     else:
-
         flights = pd.read_csv(csv_path, index_col=0)
 
     while len(flights[(flights['loaded'] == False) & (flights['attempts'] < 3)]) > 0:
@@ -128,7 +132,7 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
             estarrivalairport = flight['estarrivalairport']
             flight_id = f"{icao24}_{firstseen}_{lastseen}_\
 {estdepartureairport}_{estarrivalairport}"
-            filename = os.path.join(directory, 'state_vectors', '{flight_id}.csv')
+            filename = os.path.join(directory, 'state_vectors', f'{flight_id}.csv')
 
             flights.at[i, 'attempts'] += 1
             csv_path = os.path.join(directory, f'{flights_data_id}.csv')
