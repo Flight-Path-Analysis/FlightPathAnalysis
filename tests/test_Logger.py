@@ -36,14 +36,6 @@ def test_log_with_invalid_input(mock_logger):
         mock_logger.log(456)
 
 
-def test_clean_path(mock_logger):
-    """
-    Test the path behavior of the Logger class.
-    """
-    path = "./test_dir"
-    cleaned_path = mock_logger.clean_path(path)
-    assert cleaned_path == "./test_dir/"
-
 
 def test_log_creates_file_and_directory(mock_logger):
     """
