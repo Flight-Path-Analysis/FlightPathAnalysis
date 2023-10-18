@@ -2,8 +2,9 @@
 base-configs:
     # Root directory of where the repo is located
     root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
+    # root-directory: 'C:\Users\andre\Dropbox\Personal Projects\FlightPathAnalysis'
     # Tag for current run for log files
-    tag: 'data_gather_test'
+    tag: 'KLAX-KJFK_KJFK-EGLL_EGLL-KJFK_data_gather'
     # File containing the credentials for OpenSky database
     opensky-credentials: 'config/opensky_login.yml'
     # FIle containing the credentials for the weather database
@@ -21,7 +22,9 @@ data-gather:
         port: 2230
         # Routes of interest to be downloaded on the data gathering step
         routes-of-interest: [
-        ['KJFK','KLAX']
+        ['KLAX','KJFK'],
+        ['KJFK','EGLL'],
+        ['EGLL','KJFK']
         ]
         # Starting date of flights of interest
         start-date: '2023-01-01'
@@ -40,7 +43,11 @@ data-gather:
         # Number of retries for gathering state vectors
         state-vector-retries: 3
         # Continue data gather from last attemp. If False, it will start from scratch
-        continue-from-last: True
+        continue-from-last: False
+        # How close to the airports the flight must start/end for it to be valid
+        coordinate-distance-thresh: 0.12
+        # List of airports to be used in the data gathering step
+        airport-list-csv: 'data/flight/airport_database.csv'
 
 # All configurations for data compression
 data-compression:
@@ -80,10 +87,10 @@ plotting:
     title-fontsize: 25
     # Font size of the legend
     legend-fontsize: 15
-    # Default color map to be used
+    # Default color map to be used (all options here: https://matplotlib.org/stable/users/explain/colors/colormaps.html)
     cmap: 'cool'
     # Number of points to be used in lines
-    point-precision: 1000
+    point-precision: 200
     # Expectation value to be used when plotting
     expectation-measure: 'mean'
     # Deviation measure to be used when plotting
@@ -95,7 +102,7 @@ plotting:
     # Extent of min and max values longitude and latitude (respectively) to be plotted: [min_lon, max_lon, min_lat, max_lat]
     # If left blank or None, it will be automatically calculated for the corresponding data.
         # United States: [-121, -71, 13, 66]
-    map-extent: [-121, -71, 13, 66]
+    map-extent: [-123, -70, 13, 66]
 
 # All configurations for logging messages
 log:

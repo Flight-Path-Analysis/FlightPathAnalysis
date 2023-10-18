@@ -240,6 +240,22 @@ def to_unix_timestamp(date_input):
 
     raise ValueError("Unsupported date format")
 
+import os
+
+def clean_path(path_str):
+    """
+    Cleans a file path string by replacing backslashes with forward slashes and removing any empty path elements.
+
+    Args:
+        path_str (str): The file path string to clean.
+
+    Returns:
+        str: The cleaned file path string.
+    """
+    path_arr = str(path_str).replace('\\','/').split('/')
+    path_arr = [path for path in path_arr if path != '']
+    return os.path.join(*path_arr)
+
 class Logger:
     """
     Logger class responsible for handling logging functionalities.
@@ -259,19 +275,6 @@ class Logger:
     def __init__(self, config):
         self.config = config
 
-    def clean_path(self, path):
-        """
-        Initializes the Logger class with the given configuration.
-
-        Parameters:
-        - config (dict): The configuration dictionary containing settings
-            such as the root directory, logging directory, and the logging tag.
-        """
-        if isinstance(path, str):
-            return path if path.endswith('/') else path + '/'
-
-        raise ValueError('Path must be a string')
-
     def log(self, text):
         """
         Log the provided text with a timestamp to the specified log file.
@@ -283,10 +286,8 @@ class Logger:
             raise ValueError('Text to log must be a string')
 
         date = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
-        root_dir = self.clean_path(self.config['base-configs']['root-directory'])
-        log_directory = self.clean_path(self.config['log']['log-directory'])
-
-        log_directory = f'{root_dir}{log_directory}'
+        root_dir = clean_path(self.config['base-configs']['root-directory'])
+        log_directory = clean_path(self.config['log']['log-directory'])
 
         # Check if the log directory exists, if not, create it
         if not os.path.exists(log_directory):
@@ -294,7 +295,7 @@ class Logger:
 
         tag = self.config['base-configs']['tag']
 
-        log_file = f'{log_directory}{tag}.log'
+        log_file = os.path.join(log_directory,f'{tag}.log')
         with open(log_file, 'a', encoding="utf-8") as f:
             log_entry = f'{date} : {text}\n'
             print(log_entry, end='')  # Printing without extra newline since log_entry includes it

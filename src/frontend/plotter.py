@@ -3,14 +3,12 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from matplotlib.patches import Polygon
-import datetime
-import pandas as pd
 import numpy as np
-import os
 from shapely.geometry import Point
 from shapely.affinity import scale
 from shapely.ops import unary_union
+from scipy.stats import gaussian_kde
+from matplotlib.collections import LineCollection
 
 class Plotter:
     """
@@ -140,7 +138,6 @@ class Plotter:
             ax.add_feature(cfeature.STATES, linestyle=':')
         except:
             raise ValueError("Invalid axes provided, did you remember to add \'subplot_kw={'projection': ccrs.PlateCarree()}\' to your axis?")
-
         ys = np.zeros((len(state_vectors_files), 2, self.options['point-precision']))
         # Loop through each state vectors file and plot the route
         for n, file in enumerate(state_vectors_files):
@@ -154,7 +151,6 @@ class Plotter:
 
             ys[n, 0, :] = df_interp['lon']
             ys[n, 1, :] = df_interp['lat']
-
         mask = ~np.any(np.isnan(ys), axis=(1, 2))
         ys = ys[mask]
 
@@ -169,15 +165,25 @@ class Plotter:
             expectation = np.average(ys, axis=0)
         else:
             raise ValueError(f"Expectation Measure not recognized: {self.options['expectation-measure']}")
-        
-        # Plot the interpolated points
+        kde = gaussian_kde([np.ravel(ys[:,0,:]), np.ravel(ys[:,1,:])])
+        kde_max = np.max(kde([np.ravel(ys[:,0,:]), np.ravel(ys[:,1,:])]))
+        kde_min = np.min(kde([np.ravel(ys[:,0,:]), np.ravel(ys[:,1,:])]))
+        segments = []
+        colors = []
+
+        colors_value = np.array([(kde([ys[i,0,:], ys[i,1,:]]) - kde_min)/(kde_max - kde_min) for i in range(ys.shape[0])])
         for i in range(ys.shape[0]):
-            ax.plot(ys[i,0,:], ys[i,1,:], color = colormap(0.), alpha=1/np.sqrt(ys.shape[0]))
-        ax.plot(expectation[0], expectation[1], color = colormap(1.), linewidth = 2, label = expectation_name)
+            for j in range(ys.shape[2]-1):
+                segment = [(ys[i,0,j], ys[i,1,j]), (ys[i,0,j+1], ys[i,1,j+1])]
+                segments.append(segment)
+                colors.append(colormap(colors_value[i, j]))
+        lc = LineCollection(segments, colors=colors, linewidth=2, alpha=1/np.sqrt(ys.shape[0]))
+        ax.add_collection(lc)
+        
         if title is None:
-            self.set_ax_style(ax, 'Aircraft Routes')
+            self.set_ax_style(ax, 'Aircraft Routes', legend=False)
         else:
-            self.set_ax_style(ax, title)
+            self.set_ax_style(ax, title, legend=False)
         
 
         if fig is not None:
@@ -260,10 +266,8 @@ class Plotter:
             sigma_lat = [(np.percentile(ys[:,1,:], 50 + sig/2, axis = 0) - np.percentile(ys[:,1,:], 50 - sig/2, axis = 0))/2 for sig in sigmas]
         else:
             raise ValueError(f"Deviation Measure not recognized: {self.options['deviation-measure']}")
+        
         regions = [self.generate_confidence_region(exp_lon, exp_lat, sigma_lon[i], sigma_lat[i]) for i in range(len(sigmas))]
-        # for i in range(len(regions)):
-        #     if i != len(regions):
-        #         regions[i] = regions[i].difference(regions[i-1])
         
         # Plot the interpolated points
         for i, _ in enumerate(sigmas):

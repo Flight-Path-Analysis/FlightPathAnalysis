@@ -48,18 +48,26 @@ from src.backend import compressors
 ROOT_PATH = '.'
 
 # Loading config file
-with open(f'{ROOT_PATH}/config/config.yml', 'r', encoding="utf-8") as file:
+config_path = os.path.join(ROOT_PATH,'config','config.yml')
+with open(config_path, 'r', encoding="utf-8") as file:
     try:
         CONFIG = yaml.safe_load(file)
     except yaml.YAMLError as exc:
         print(exc)
 
+CONFIG['data-gather']['flights']['out-dir'] = utils.clean_path(CONFIG['data-gather']['flights']['out-dir'])
+CONFIG['data-gather']['flights']['bad-days-csv'] = utils.clean_path(CONFIG['data-gather']['flights']['bad-days-csv'])
+CONFIG['base-configs']['opensky-credentials'] = utils.clean_path(CONFIG['base-configs']['opensky-credentials'])
+CONFIG['log']['log-directory'] = utils.clean_path(CONFIG['log']['log-directory'])
+CONFIG['data-gather']['flights']['airport-list-csv'] = utils.clean_path(CONFIG['data-gather']['flights']['airport-list-csv'])
+
 # Checking for and loading opensky credentials file.
-CREDENTIALS_FILE = CONFIG['base-configs']['opensky-credentials']
+CREDENTIALS_FILE = utils.clean_path(CONFIG['base-configs']['opensky-credentials'])
 if not CREDENTIALS_FILE:
     raise ValueError('No OpenSky credentials file specified in in config.yaml')
 
-with open(f'{ROOT_PATH}/{CREDENTIALS_FILE}', 'r', encoding="utf-8") as file:
+credentials_path = os.path.join(ROOT_PATH, CREDENTIALS_FILE)
+with open(credentials_path, 'r', encoding="utf-8") as file:
     try:
         CREDENTIALS = yaml.safe_load(file)
     except yaml.YAMLError as exc:
@@ -93,9 +101,17 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
     end_date = CONFIG['data-gather']['flights']['end-date']
     departure_airport = airport_route[0]
     arrival_airport = airport_route[1]
+    airports_df = pd.read_csv(CONFIG['data-gather']['flights']['airport-list-csv'], index_col=0)
+    airports_df.set_index('ICAO', inplace=True)
     flights_data_id = f"{departure_airport}_{arrival_airport}_{start_date}_{end_date}"
-    directory = f"{ROOT_PATH}/{CONFIG['data-gather']['flights']['out-dir']}/\
-{departure_airport}_{arrival_airport}/"
+    directory = os.path.join(ROOT_PATH,
+                             CONFIG['data-gather']['flights']['out-dir'],
+                             f'{departure_airport}_{arrival_airport}')
+    csv_path = os.path.join(directory, f'{flights_data_id}.csv')
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    if not os.path.exists(os.path.join(directory, 'state_vectors')):
+                os.makedirs(os.path.join(directory, 'state_vectors'))
     if not CONFIG['data-gather']['flights']['continue-from-last'] or \
         f'{flights_data_id}.csv' not in os.listdir(directory):
         flights = OPENSKY_QUERIER.query_flight_data(
@@ -105,9 +121,10 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
             'end': end_date})
         flights['attempts'] = [0]*len(flights)
         flights['loaded'] = [False]*len(flights)
-        flights.to_csv(f"{directory}/{flights_data_id}.csv")
+        flights.index = range(len(flights))
+        flights.to_csv(csv_path)
     else:
-        flights = pd.read_csv(f"{directory}/{flights_data_id}.csv", index_col=0)
+        flights = pd.read_csv(csv_path, index_col=0)
 
     while len(flights[(flights['loaded'] == False) & (flights['attempts'] < 3)]) > 0:
         for i, flight in flights[(flights['loaded'] == False) & (flights['attempts'] < 3)].iterrows():
@@ -118,10 +135,11 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
             estarrivalairport = flight['estarrivalairport']
             flight_id = f"{icao24}_{firstseen}_{lastseen}_\
 {estdepartureairport}_{estarrivalairport}"
-            filename = f"{directory}/state_vectors/{flight_id}.csv"
+            filename = os.path.join(directory, 'state_vectors', f'{flight_id}.csv')
 
             flights.at[i, 'attempts'] += 1
-            flights.to_csv(f"{directory}/{flights_data_id}.csv")
+            csv_path = os.path.join(directory, f'{flights_data_id}.csv')
+            flights.to_csv(csv_path)
             try:
                 state_vectors = OPENSKY_QUERIER.query_state_vectors(
                                 icao24,
@@ -143,15 +161,30 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
 
                 cols_to_check = ['lat', 'lon']
                 state_vectors = state_vectors.drop_duplicates(subset=cols_to_check, keep='first')
+                starting_lat_diff = abs(state_vectors.iloc[0]['lat'] - airports_df.loc[estdepartureairport]['lat'])
+                ending_lat_diff = abs(state_vectors.iloc[-1]['lat'] - airports_df.loc[estarrivalairport]['lat'])
+                starting_lon_diff = abs(state_vectors.iloc[0]['lon'] - airports_df.loc[estdepartureairport]['lon'])
+                ending_lon_diff = abs(state_vectors.iloc[-1]['lon'] - airports_df.loc[estarrivalairport]['lon'])
 
-                # Encoding data
-                if not os.path.exists(f'{directory}/state_vectors/'):
-                    os.makedirs(f'{directory}/state_vectors/')
-                COMPRESSOR.encode_from_dataframe_to_file(
-                    state_vectors, filename)
+                diffs = [starting_lat_diff, ending_lat_diff, starting_lon_diff, ending_lon_diff ]
+
+                if all(x < CONFIG['data-gather']['flights']['coordinate-distance-thresh'] for x in diffs):
+                    # Encoding data
+                    state_vector_path = os.path.join(directory, 'state_vectors')
+                    if not os.path.exists(state_vector_path):
+                        os.makedirs(state_vector_path)
+                    COMPRESSOR.encode_from_dataframe_to_file(
+                        state_vectors, filename)
+                    LOGGER.log(f"Flight {flight_id} loaded successfully.")
+                else:
+                    LOGGER.log(f"Flight {flight_id} is too far from the airport, skipping.")
                 flights.at[i, 'loaded'] = True
-                flights.to_csv(f"{directory}/{flights_data_id}.csv")
+                flights.to_csv(csv_path)
+            except KeyboardInterrupt:
+                LOGGER.log("KeyboardInterrupt caught. Exiting the program.")
+                raise
             except:
+                LOGGER.log("Failed to load flight, saved for later, skipping for now.")
                 pass
 
-print('Done!')
+LOGGER.log('Done!')
