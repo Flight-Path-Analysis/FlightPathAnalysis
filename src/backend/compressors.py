@@ -39,6 +39,8 @@ from scipy.interpolate import UnivariateSpline, BSpline
 import numpy as np
 from pympler import asizeof
 import pandas as pd
+import os
+from src.backend import utils
 
 
 class SplineCompressor:
@@ -396,17 +398,11 @@ class SplineCompressor:
         yaml_data = yaml.dump(metadata, default_flow_style=None)
 
         # Retrieve directory configurations to build the full file path
-        basedir = self.config["base-configs"]["root-directory"]
-        outdir = self.config["data-gather"]["flights"]["out-dir"]
-
-        # Ensure directories end with a '/'
-        if not basedir.endswith("/"):
-            basedir += "/"
-        if not outdir.endswith("/"):
-            outdir += "/"
+        basedir = utils.clean_path(self.config["base-configs"]["root-directory"])
+        outdir = utils.clean_path(self.config["data-gather"]["flights"]["out-dir"])
 
         # Build the full file path
-        filename = basedir + outdir + filename
+        filename = os.path.join(basedir, outdir, filename)
 
         # Write the YAML data to the file
         with open(filename, "w", encoding="utf-8") as f:
@@ -542,7 +538,7 @@ class CsvCompressor:
             "heading",
             "velocity",
         ]
-        self.log_verbose(f"CSV Encoding data for {filename.split('/')[-1]}")
+        self.log_verbose(f"CSV Encoding data for {str(filename).split('/')[-1]}")
 
         df_interp = {
             "time": np.linspace(

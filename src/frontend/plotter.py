@@ -260,10 +260,8 @@ class Plotter:
             sigma_lat = [(np.percentile(ys[:,1,:], 50 + sig/2, axis = 0) - np.percentile(ys[:,1,:], 50 - sig/2, axis = 0))/2 for sig in sigmas]
         else:
             raise ValueError(f"Deviation Measure not recognized: {self.options['deviation-measure']}")
+        
         regions = [self.generate_confidence_region(exp_lon, exp_lat, sigma_lon[i], sigma_lat[i]) for i in range(len(sigmas))]
-        # for i in range(len(regions)):
-        #     if i != len(regions):
-        #         regions[i] = regions[i].difference(regions[i-1])
         
         # Plot the interpolated points
         for i, _ in enumerate(sigmas):
