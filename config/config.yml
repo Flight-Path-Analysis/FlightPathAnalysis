@@ -83,7 +83,7 @@ plotting:
     title-fontsize: 25
     # Font size of the legend
     legend-fontsize: 15
-    # Default color map to be used
+    # Default color map to be used (all options here: https://matplotlib.org/stable/users/explain/colors/colormaps.html)
     cmap: 'cool'
     # Number of points to be used in lines
     point-precision: 200

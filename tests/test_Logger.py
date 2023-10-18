@@ -35,8 +35,6 @@ def test_log_with_invalid_input(mock_logger):
     with pytest.raises(ValueError, match="Text to log must be a string"):
         mock_logger.log(456)
 
-
-
 def test_log_creates_file_and_directory(mock_logger):
     """
     Test the file creation behavior of the Logger class.
