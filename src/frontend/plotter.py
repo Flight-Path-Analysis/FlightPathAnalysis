@@ -26,20 +26,7 @@ QUANTITY_NAMES_NO_UNITS = {
 'geoaltitude': 'Geometric Altitude',
 'heading': 'Heading',
 'velocity': 'Velocity'}
-class Plotter:
-    """
-    A class for creating plots of flight data.
 
-    Attributes:
-    - options: a dictionary containing configuration options for plotting.
-
-    Methods:
-    - __init__(self, config): Initializes a Plotter object.
-    - set_quantity_ax_style(self, ax, title, quantity, legend=True): Sets the style of a plot of a single quantity.
-    - set_route_ax_style(self, ax, title, legend=True): Sets the style of a plot of a flight route.
-    - plot_quantity(self, state_vector_file, compressor, quantity, filename=None, ax=None, title=None): Plots a single quantity for a single flight.
-    - plot_quantity_multi(self, state_vectors_files, compressor, quantity, filename=None, ax=None, title=None): Plots a single quantity for multiple flights.
-    """
 class Plotter:
     """
     Initializes a Plotter object.
