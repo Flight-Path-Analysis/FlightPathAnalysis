@@ -163,7 +163,7 @@ class Plotter:
         if filename is not None:
             fig.savefig(filename)
 
-    def plot_quantity_multi(self, state_vectors_files, compressor, quantity, filename=None, ax=None, title=None):
+    def plot_quantity_multi(self, state_vectors_files, compressor, quantity, filename=None, ax=None, title=None, norm_time=True):
         """
         Plots a quantity against time for multiple flights.
 
@@ -194,6 +194,7 @@ class Plotter:
             fig = None
         
         ys = np.zeros((len(state_vectors_files), self.options['point-precision']))
+        xs = np.zeros((len(state_vectors_files), self.options['point-precision']))
         total_ts = np.zeros(len(state_vectors_files))
         for i, file in enumerate(state_vectors_files):
             df = compressor.decode_to_dataframe_from_file(file)[['time', quantity]]
@@ -205,12 +206,15 @@ class Plotter:
             if quantity in ('lon', 'heading'):
                 df_interp[quantity] = np.mod(df_interp[quantity], 360)
             ys[i] = df_interp[quantity]
+            xs[i] = df_interp['time'] - df_interp['time'][0]
             total_ts[i] = df_interp['time'][-1] - df_interp['time'][0]
         
         mask = ~np.any(np.isnan(ys), axis=0)
         ys = ys[:, mask]
-        xs = np.linspace(0, np.mean(total_ts), num=self.options['point-precision'])
-        xs = np.tile(xs, (ys.shape[0],1))
+        xs = xs[:, mask]
+        if norm_time:
+            xs = np.linspace(0, np.mean(total_ts), num=self.options['point-precision'])
+            xs = np.tile(xs, (ys.shape[0],1))
 
         data = np.vstack([xs.ravel(), ys.ravel()])
         kde = gaussian_kde(data)
@@ -248,7 +252,7 @@ class Plotter:
         if filename is not None:
             fig.savefig(filename)        
 
-    def plot_quantity_shaded(self, state_vectors_files, compressor, quantity, filename=None, ax=None, title=None):
+    def plot_quantity_shaded(self, state_vectors_files, compressor, quantity, filename=None, ax=None, title=None, residue=False, norm_time=True):
         """
         Plots a shaded area representing the deviation of a given quantity across multiple flights, along with the mean path.
 
@@ -279,6 +283,7 @@ class Plotter:
             fig = None
         
         ys = np.zeros((len(state_vectors_files), self.options['point-precision']))
+        xs = np.zeros((len(state_vectors_files), self.options['point-precision']))
         total_ts = np.zeros(len(state_vectors_files))
         for i, file in enumerate(state_vectors_files):
             df = compressor.decode_to_dataframe_from_file(file)[['time', quantity]]
@@ -290,44 +295,67 @@ class Plotter:
             if quantity in ('lon', 'heading'):
                 df_interp[quantity] = np.mod(df_interp[quantity], 360)
             ys[i] = df_interp[quantity]
+            xs[i] = df_interp['time'] - df_interp['time'][0]
             total_ts[i] = df_interp['time'][-1] - df_interp['time'][0]
         
         mask = ~np.any(np.isnan(ys), axis=0)
         ys = ys[:, mask]
-
+        
         if self.options['expectation-measure'] == 'mean':
             expectation_name = 'Mean Path'
-            expectation = np.mean(ys, axis=0)
             t_final = np.mean(total_ts)
+            expectation_y = np.mean(ys, axis=0)
+            expectation_x = np.mean(xs, axis=0)
         elif self.options['expectation-measure'] == 'median':
             expectation_name = 'Median Path'
-            expectation = np.median(ys, axis=0)
             t_final = np.median(total_ts)
+            expectation_y = np.median(ys, axis=0)
+            expectation_x = np.median(xs, axis=0)
         elif self.options['expectation-measure'] == 'average':
             expectation_name = 'Average Path'
-            expectation = np.average(ys, axis=0)
             t_final = np.average(total_ts)
+            expectation_y = np.average(ys, axis=0)
+            expectation_x = np.average(xs, axis=0)
         else:
             raise ValueError(f"Expectation Measure not recognized: {self.options['expectation-measure']}")
 
         sigmas = sorted(self.options['deviation-values'])[::-1]
         if self.options['deviation-measure'] == 'std':
             sigma_names = [rf"${sigma:.1f}\sigma$ interval" for sigma in sigmas]
-            sigma = [sig*np.std(ys, axis = 0) for sig in sigmas]
+            sigma_y = [sig*np.std(ys, axis = 0) for sig in sigmas]
+            sigma_x = [sig*np.std(xs, axis = 0) for sig in sigmas]
         elif self.options['deviation-measure'] == 'pct':
             sigma_names = [rf"${sigma:.1f}\%$ interval" for sigma in sigmas]
-            sigma = [(np.percentile(ys, 50 + sig/2, axis = 0) - np.percentile(ys, 50 - sig/2, axis = 0))/2 for sig in sigmas]
+            sigma_y = [(np.percentile(ys, 50 + sig/2, axis = 0) - np.percentile(ys, 50 - sig/2, axis = 0))/2 for sig in sigmas]
+            sigma_x = [(np.percentile(xs, 50 + sig/2, axis = 0) - np.percentile(xs, 50 - sig/2, axis = 0))/2 for sig in sigmas]
         else:
             raise ValueError(f"Deviation Measure not recognized: {self.options['deviation-measure']}")
-        
-        ts = np.linspace(0, t_final, num=self.options['point-precision'])
-        for i, _ in enumerate(sigmas):
-            ax.fill_between(ts, expectation - sigma[i], expectation + sigma[i], alpha=0.5, color=colormap(float(i/len(sigmas))), label=sigma_names[i])
-        
-        ax.plot(ts, expectation, color = colormap(1.), label=expectation_name)
+        if residue:
+            expectation_y = expectation_y - expectation_y
 
-        y_range = np.max(ys) - np.min(ys)
-        ax.set_ylim([np.min(ys) - y_range/10, np.max(ys) + y_range/10])
+        if norm_time:
+            expectation_x = np.linspace(0, t_final, num=self.options['point-precision'])
+            for i, _ in enumerate(sigmas):
+                color =colormap(float(i/len(sigmas)))
+                label = sigma_names[i]
+                ax.fill_between(expectation_x, expectation_y - sigma_y[i], expectation_y + sigma_y[i], color=color, alpha=0.5, label=label)
+            ax.plot(expectation_x, expectation_y, color = colormap(1.), linewidth = 2, label = expectation_name)
+        else:
+            regions = [self.generate_confidence_region(expectation_x, expectation_y, sigma_x[i], sigma_y[i]) for i in range(len(sigmas))]
+            
+            # Plot the interpolated points
+            for i, _ in enumerate(sigmas):
+                color = colormap(float(i/len(sigmas)))
+                if isinstance(regions[i], MultiPolygon):
+                    label = sigma_names[i]
+                    for poly in regions[i].geoms:
+                        x, y = poly.exterior.xy
+                        ax.fill(x, y, color=color, alpha=0.5, label=label)
+                        label=None
+                else:
+                    x, y = regions[i].exterior.xy
+                    ax.fill(x, y, color=color, alpha=0.5, label=sigma_names[i])
+            ax.plot(expectation_x, expectation_y, color = colormap(1.), linewidth = 2, label = expectation_name)
 
         if title is None:
             self.set_quantity_ax_style(ax, f'Distribution of Flights\' {QUANTITY_NAMES_NO_UNITS[quantity]}', quantity, legend=True)
@@ -337,7 +365,7 @@ class Plotter:
         if fig is not None:
             fig.tight_layout()
         if filename is not None:
-            fig.savefig(filename)  
+            fig.savefig(filename) 
 
     def plot_route(self, state_vector_file, compressor, filename = None, ax = None, title = None):
         """
