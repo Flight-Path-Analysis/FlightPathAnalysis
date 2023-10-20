@@ -17,6 +17,7 @@ data/weather/*
 /src/backend/opensky-api
 bkp
 config/opensky_login.yml
+config/config.yml
 logs/*
 !logs/.gitkeep
 data/flight/bad_days.csv
