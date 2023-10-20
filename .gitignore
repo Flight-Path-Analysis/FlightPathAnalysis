@@ -21,3 +21,4 @@ logs/*
 !logs/.gitkeep
 data/flight/bad_days.csv
 config/config_mac.yml
+
