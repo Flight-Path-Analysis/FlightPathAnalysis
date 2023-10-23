@@ -472,15 +472,16 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
             )
 
             if results_df is not None:
-                if len(results_df) == 0:
-                    results_df = utils.parse_to_dataframe(query_results["stdout"])
-                elif len(utils.parse_to_dataframe(query_results["stdout"])) != 0:
-                    results_df = pd.concat(
-                        [results_df, utils.parse_to_dataframe(query_results["stdout"])]
-                    )
-
+                if query_results["stdout"] != "":
+                    if len(results_df) == 0:
+                        results_df = utils.parse_to_dataframe(query_results["stdout"])
+                    elif len(utils.parse_to_dataframe(query_results["stdout"])) != 0:
+                        results_df = pd.concat(
+                            [results_df, utils.parse_to_dataframe(query_results["stdout"])]
+                        )
             else:
-                results_df = utils.parse_to_dataframe(query_results["stdout"])
+                if query_results["stdout"] != "":
+                    results_df = utils.parse_to_dataframe(query_results["stdout"])
 
         return results_df
 
