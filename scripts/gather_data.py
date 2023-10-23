@@ -119,72 +119,75 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
             'arrival_airport': arrival_airport},
             {'start': start_date,
             'end': end_date})
-        flights['attempts'] = [0]*len(flights)
-        flights['loaded'] = [False]*len(flights)
-        flights.index = range(len(flights))
-        flights.to_csv(csv_path)
+        if flights is None:
+            LOGGER.log(f"No flights found for {departure_airport} to {arrival_airport} between {start_date} and {end_date}.")
+        else:
+            flights['attempts'] = [0]*len(flights)
+            flights['loaded'] = [False]*len(flights)
+            flights.index = range(len(flights))
+            flights.to_csv(csv_path)
     else:
         flights = pd.read_csv(csv_path, index_col=0)
+    if flights is not None:
+        while len(flights[(flights['loaded'] == False) & (flights['attempts'] < 3)]) > 0:
+            for i, flight in flights[(flights['loaded'] == False) & (flights['attempts'] < 3)].iterrows():
+                icao24 = flight['icao24']
+                firstseen = flight['firstseen']
+                lastseen = flight['lastseen']
+                estdepartureairport = flight['estdepartureairport']
+                estarrivalairport = flight['estarrivalairport']
+                flight_id = f"{icao24}_{firstseen}_{lastseen}_\
+    {estdepartureairport}_{estarrivalairport}"
+                filename = os.path.join(directory, 'state_vectors', f'{flight_id}.csv')
 
-    while len(flights[(flights['loaded'] == False) & (flights['attempts'] < 3)]) > 0:
-        for i, flight in flights[(flights['loaded'] == False) & (flights['attempts'] < 3)].iterrows():
-            icao24 = flight['icao24']
-            firstseen = flight['firstseen']
-            lastseen = flight['lastseen']
-            estdepartureairport = flight['estdepartureairport']
-            estarrivalairport = flight['estarrivalairport']
-            flight_id = f"{icao24}_{firstseen}_{lastseen}_\
-{estdepartureairport}_{estarrivalairport}"
-            filename = os.path.join(directory, 'state_vectors', f'{flight_id}.csv')
-
-            flights.at[i, 'attempts'] += 1
-            csv_path = os.path.join(directory, f'{flights_data_id}.csv')
-            flights.to_csv(csv_path)
-            try:
-                state_vectors = OPENSKY_QUERIER.query_state_vectors(
-                                icao24,
-                                firstseen,
-                                lastseen)
-                # Cleaning Data
-                cols_to_check = ['time',
-                                'lat',
-                                'lon',
-                                'velocity',
-                                'heading',
-                                'baroaltitude',
-                                'geoaltitude',
-                                'hour']
-                for col in cols_to_check:
-                    state_vectors[col] = state_vectors[col].apply(
-                        lambda x: np.nan if isinstance(x, str) else x)
-                state_vectors.dropna(inplace=True)
-
-                cols_to_check = ['lat', 'lon']
-                state_vectors = state_vectors.drop_duplicates(subset=cols_to_check, keep='first')
-                starting_lat_diff = abs(state_vectors.iloc[0]['lat'] - airports_df.loc[estdepartureairport]['lat'])
-                ending_lat_diff = abs(state_vectors.iloc[-1]['lat'] - airports_df.loc[estarrivalairport]['lat'])
-                starting_lon_diff = abs(state_vectors.iloc[0]['lon'] - airports_df.loc[estdepartureairport]['lon'])
-                ending_lon_diff = abs(state_vectors.iloc[-1]['lon'] - airports_df.loc[estarrivalairport]['lon'])
-
-                diffs = [starting_lat_diff, ending_lat_diff, starting_lon_diff, ending_lon_diff ]
-
-                if all(x < CONFIG['data-gather']['flights']['coordinate-distance-thresh'] for x in diffs):
-                    # Encoding data
-                    state_vector_path = os.path.join(directory, 'state_vectors')
-                    if not os.path.exists(state_vector_path):
-                        os.makedirs(state_vector_path)
-                    COMPRESSOR.encode_from_dataframe_to_file(
-                        state_vectors, filename)
-                    LOGGER.log(f"Flight {flight_id} loaded successfully.")
-                else:
-                    LOGGER.log(f"Flight {flight_id} is too far from the airport, skipping.")
-                flights.at[i, 'loaded'] = True
+                flights.at[i, 'attempts'] += 1
+                csv_path = os.path.join(directory, f'{flights_data_id}.csv')
                 flights.to_csv(csv_path)
-            except KeyboardInterrupt:
-                LOGGER.log("KeyboardInterrupt caught. Exiting the program.")
-                raise
-            except:
-                LOGGER.log("Failed to load flight, saved for later, skipping for now.")
-                pass
+                try:
+                    state_vectors = OPENSKY_QUERIER.query_state_vectors(
+                                    icao24,
+                                    firstseen,
+                                    lastseen)
+                    # Cleaning Data
+                    cols_to_check = ['time',
+                                    'lat',
+                                    'lon',
+                                    'velocity',
+                                    'heading',
+                                    'baroaltitude',
+                                    'geoaltitude',
+                                    'hour']
+                    for col in cols_to_check:
+                        state_vectors[col] = state_vectors[col].apply(
+                            lambda x: np.nan if isinstance(x, str) else x)
+                    state_vectors.dropna(inplace=True)
+
+                    cols_to_check = ['lat', 'lon']
+                    state_vectors = state_vectors.drop_duplicates(subset=cols_to_check, keep='first')
+                    starting_lat_diff = abs(state_vectors.iloc[0]['lat'] - airports_df.loc[estdepartureairport]['lat'])
+                    ending_lat_diff = abs(state_vectors.iloc[-1]['lat'] - airports_df.loc[estarrivalairport]['lat'])
+                    starting_lon_diff = abs(state_vectors.iloc[0]['lon'] - airports_df.loc[estdepartureairport]['lon'])
+                    ending_lon_diff = abs(state_vectors.iloc[-1]['lon'] - airports_df.loc[estarrivalairport]['lon'])
+
+                    diffs = [starting_lat_diff, ending_lat_diff, starting_lon_diff, ending_lon_diff ]
+
+                    if all(x < CONFIG['data-gather']['flights']['coordinate-distance-thresh'] for x in diffs):
+                        # Encoding data
+                        state_vector_path = os.path.join(directory, 'state_vectors')
+                        if not os.path.exists(state_vector_path):
+                            os.makedirs(state_vector_path)
+                        COMPRESSOR.encode_from_dataframe_to_file(
+                            state_vectors, filename)
+                        LOGGER.log(f"Flight {flight_id} loaded successfully.")
+                    else:
+                        LOGGER.log(f"Flight {flight_id} is too far from the airport, skipping.")
+                    flights.at[i, 'loaded'] = True
+                    flights.to_csv(csv_path)
+                except KeyboardInterrupt:
+                    LOGGER.log("KeyboardInterrupt caught. Exiting the program.")
+                    raise
+                except:
+                    LOGGER.log("Failed to load flight, saved for later, skipping for now.")
+                    pass
 
 LOGGER.log('Done!')
