@@ -11,6 +11,7 @@ from shapely.ops import unary_union
 from shapely.geometry import MultiPolygon
 from scipy.stats import gaussian_kde
 from matplotlib.collections import LineCollection
+from matplotlib.patches import Circle
 
 QUANTITY_NAMES = {
 'lat': 'Latitude (deg)',
@@ -26,6 +27,37 @@ QUANTITY_NAMES_NO_UNITS = {
 'geoaltitude': 'Geometric Altitude',
 'heading': 'Heading',
 'velocity': 'Velocity'}
+
+def meters_to_degrees(meters, latitude):
+    """
+    Convert distance from meters to degrees at a specific latitude.
+
+    Args:
+    meters (float): Distance in meters.
+    latitude (float): Latitude at which the conversion is happening.
+
+    Returns:
+    float: Distance in degrees.
+    """
+    # Earth's radius in meters
+    EARTH_RADIUS = 6.371e6
+    
+    # Conversion from degrees to radians
+    latitude_radians = latitude/180*np.pi
+    
+    # Number of meters in a radian
+    meters_per_radian = EARTH_RADIUS
+
+    # Calculate the number of meters per degree of latitude and longitude
+    meters_per_degree_lat = (np.pi / 180) * EARTH_RADIUS
+    meters_per_degree_lon = (np.pi / 180) * EARTH_RADIUS * np.cos(latitude_radians)
+
+    # Calculate the distance in degrees
+    degrees_lat = meters / meters_per_degree_lat
+    degrees_lon = meters / meters_per_degree_lon
+
+    # We return the mean value considering changes in latitude may affect the circle shape
+    return (degrees_lat + degrees_lon) / 2
 
 class Plotter:
     """
@@ -93,12 +125,12 @@ class Plotter:
         ax.set_title(title, fontsize=self.options['title-fontsize'])
 
         # For the 'Longitude' label at the bottom
-        ax.text(0.5, -0.08, 'Longitude (deg)', va='bottom', ha='center',
+        ax.text(0.5, -0.2, 'Longitude (deg)', va='bottom', ha='center',
                 rotation='horizontal', rotation_mode='anchor',
                 transform=ax.transAxes, fontsize=self.options['axis-fontsize'])
 
         # For the 'Latitude' label at the left
-        ax.text(-0.12, 0.6, 'Latitude (deg)', va='center', ha='right',
+        ax.text(-0.10, 0.7, 'Latitude (deg)', va='center', ha='right',
                 rotation='vertical', rotation_mode='anchor',
                 transform=ax.transAxes, fontsize=self.options['axis-fontsize'])
 
@@ -601,3 +633,50 @@ class Plotter:
             # Save the plot to a file
             if filename is not None:
                 fig.savefig(filename)
+
+    def plot_weather_stations(self, stations, sigma_circles = False, filename = None, ax = None, title = None):
+        """
+        Plots the locations of weather stations on a map.
+
+        Args:
+        - stations: a list of weather stations.
+        - filename (optional): the name of the file to save the plot to.
+        - ax (optional): the axes to plot the data on.
+        - title (optional): the title of the plot.
+        """
+        # Get the colormap to use for the plot
+        colormap = getattr(plt.cm, self.options['cmap'])
+        if ax is None:
+            # Define the figure and axes for the plot
+            fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()},
+                                figsize=[self.options['fig-size'][0], self.options['fig-size'][0]])
+        else:
+            fig = None
+        # Add features to the plot
+        ax.add_feature(cfeature.BORDERS, linestyle=':')
+        ax.add_feature(cfeature.COASTLINE)
+        ax.add_feature(cfeature.STATES, linestyle=':')
+
+        ax.scatter(stations['lon'], stations['lat'], color = 'k', marker = '.')
+        if sigma_circles:
+            for _, row in stations.iterrows():
+                # Convert the 'sigma' value from meters to degrees
+                sigma_in_degrees = meters_to_degrees(row['sigma'], row['lat'])
+
+                circle = Circle(xy=(row['lon'], row['lat']), radius=sigma_in_degrees, transform=ccrs.PlateCarree(),
+                        edgecolor='red', facecolor='red', alpha=0.1, zorder=2)
+                ax.add_patch(circle)
+            ax.set_extent(self.options['map-extent'], crs=ccrs.PlateCarree())
+
+        if title is None:
+            self.set_route_ax_style(ax, 'Weather Stations', legend=False)
+        else:
+            self.set_route_ax_style(ax, title, legend=False)
+        
+        if fig is not None:
+            fig.tight_layout()
+            # Save the plot to a file
+            if filename is not None:
+                fig.savefig(filename)
+
+    # def plot_interpolated_scalar(self, station_data, lats, lons, time, filename = None, ax = None, title = None)

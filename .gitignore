@@ -7,8 +7,7 @@ node_modules/
 **/.DS_Store
 data/flight/*
 Thumbs.db
-prototyping/**/*.*
-!prototyping/**/
+prototyping/*
 !prototyping/prototyping.ipynb
 data/flight/*
 data/weather/*

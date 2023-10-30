@@ -30,32 +30,6 @@ import pandas as pd
 
 from src.backend import utils
 
-
-def handler(signum, frame):
-    """
-    Signal handler for raising a TimeoutError after a timeout.
-
-    This function is intended to be used with the signal module to raise
-    a TimeoutError after a certain period of time, interrupting the
-    program's flow, which can be caught with a try/except block elsewhere
-    in the code. Useful for implementing timeouts on operations that might
-    hang or run indefinitely.
-
-    Parameters:
-    signum : int
-        The signal number being handled. Generally, this will be signal.SIGALRM.
-    frame : frame
-        The current stack frame at the point the signal occurred. This might be
-        used for more advanced handling scenarios, but it's not used in this
-        basic handler.
-
-    Raises:
-    TimeoutError:
-        Always raised to indicate a timeout scenario.
-    """
-    raise TimeoutError("Operation timed out!")
-
-
 class Querier:
     """
     A class to facilitate querying of the OpenSky database using SSH.
@@ -114,20 +88,6 @@ class Querier:
         """
         if self.logger:
             self.logger.log(message)
-
-    # class OpenSkyQuery:
-    #     """
-    #     A class for connecting to the OpenSky Network API and querying flight data.
-
-    #     Attributes:
-    #     - credentials (dict): A dictionary containing the login credentials for the OpenSky API.
-    #     - client (paramiko.SSHClient): A client object for connecting to the OpenSky API.
-    #     """
-
-    #     def __init__(self, credentials):
-    #         self.credentials = credentials
-    #         self.client = paramiko.SSHClient()
-    #         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     def connect(self):
         """
@@ -413,7 +373,7 @@ baroaltitude, geoaltitude, onground, hour
         - pd.DataFrame: DataFrame containing the flight data results.
         """
         # Set the signal handler and a 300-second alarm
-        signal.signal(signal.SIGALRM, handler)
+        signal.signal(signal.SIGALRM, utils.timeout_handler)
         # If logger is NOT None, checks if it's an isnstance of utils.Logger
         if self.logger and not isinstance(self.logger, utils.Logger):
             raise ValueError("Expected logger to be an instance of utils.Logger")
@@ -474,14 +434,14 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
             if results_df is not None:
                 if query_results["stdout"] != "":
                     if len(results_df) == 0:
-                        results_df = utils.parse_to_dataframe(query_results["stdout"])
-                    elif len(utils.parse_to_dataframe(query_results["stdout"])) != 0:
+                        results_df = utils.parse_opensky_to_dataframe(query_results["stdout"])
+                    elif len(utils.parse_opensky_to_dataframe(query_results["stdout"])) != 0:
                         results_df = pd.concat(
-                            [results_df, utils.parse_to_dataframe(query_results["stdout"])]
+                            [results_df, utils.parse_opensky_to_dataframe(query_results["stdout"])]
                         )
             else:
                 if query_results["stdout"] != "":
-                    results_df = utils.parse_to_dataframe(query_results["stdout"])
+                    results_df = utils.parse_opensky_to_dataframe(query_results["stdout"])
 
         return results_df
 
@@ -623,4 +583,4 @@ between the times {times_str['start']} and {times_str['end']}"
             finally:
                 signal.alarm(0)
 
-        return utils.parse_to_dataframe(query_results["stdout"])
+        return utils.parse_opensky_to_dataframe(query_results["stdout"])

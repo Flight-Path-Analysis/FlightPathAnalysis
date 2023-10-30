@@ -6,7 +6,7 @@ and logging functionalities.
 
 Functions:
     - to_number(s): Convert a string input to a number if possible.
-    - parse_to_dataframe(results): Parse the text results of a database query to a pandas DataFrame.
+    - parse_opensky_to_dataframe(results): Parse the text results of a database query to a pandas DataFrame.
     - to_unix_timestamp(date_input): Convert a given date input to its corresponding UNIX timestamp.
 
 Classes:
@@ -70,8 +70,39 @@ def to_number(s):
         return int(s)
     except ValueError:
         return s
+    
+def my_eval(s):
+    """
+    Converts a string into an integer, float, or date object, depending on the string's content. 
+    If the conversion is unsuccessful, returns the original string.
 
-def parse_to_dataframe(results):
+    This function attempts to interpret a string in the following order:
+    1. Tries to convert the string to an integer.
+    2. If unsuccessful, tries to convert it to a float.
+    3. If still unsuccessful, tries to convert it to a date.
+    4. If all conversions fail, it returns the original string.
+
+    Parameters:
+    - s (str): The string to convert.
+
+    Returns:
+    - int, float, datetime.date, or str: The converted value or the original string if all conversions fail.
+    """
+    try:
+        # Try to convert the string to a number (int or float)
+        return int(s)
+    except ValueError:
+        try:
+            return float(s)
+        except ValueError:
+            try:
+                # Try to convert the string to a datetime date
+                return datetime.datetime.strptime(s, '%Y-%m-%d').date()
+            except ValueError:
+                # If all conversions fail, return the original string
+                return s
+
+def parse_opensky_to_dataframe(results):
     """
     Parse the text results of a database query to a pandas DataFrame.
     
@@ -158,6 +189,45 @@ is expected to contain nothing but \"+\" and \"-\"")
     df = pd.DataFrame(df_dict).map(to_number)
 
     return df
+
+def parse_iem_to_dataframe(results):
+    """
+    Converts a text block of data into a Pandas DataFrame.
+
+    The function processes a long string of data, where each line represents either a comment, 
+    a header (with column names), or a row of data. Lines beginning with '#' are comments and 
+    are ignored, as are empty lines. The first line of non-commented text is treated as the header, 
+    providing the column names for the DataFrame. Subsequent lines of data are split by commas 
+    and added to the respective columns.
+
+    Each entry in the data is processed by the 'my_eval' function to attempt conversion into 
+    int, float, or date types, falling back to the original string if necessary.
+
+    Parameters:
+    - data (str): The block of text data to convert.
+
+    Returns:
+    - DataFrame: A Pandas DataFrame representing the structured data.
+    """
+
+    # Dictionary that will become a dataframe
+    data_values = {}
+    # Looping thorugh lines of data
+    for line in results.split('\n'):
+        # Ignoring empty lines or commented-out lines
+        if not line.startswith('#') and len(line) > 0:
+            # The first non-commented line contains the data columns.
+            # If there's nothing in the dictionary, it means that we're there, redefine the dictionary
+            if len(data_values) == 0:
+                # Start a dictionary where the keys are the columns, and entries are empty arrays (which we'll populate)
+                data_values = {col:[] for col in line.split(',')}
+            # If we're not in the columns line, we're in a line that contains data
+            else:
+                # Split data and append it to each entry of dictionary
+                line_data = line.split(',')
+                for i, col in enumerate(data_values.keys()):
+                    data_values[col] += [my_eval(line_data[i])]
+    return pd.DataFrame(data_values)
 
 def to_unix_timestamp(date_input):
     """
@@ -272,8 +342,9 @@ class Logger:
     - clean_path(path): Ensure the provided path string ends with a '/'.
     - log(text): Log the provided text with a timestamp to the specified log file.
     """
-    def __init__(self, config):
+    def __init__(self, config, clear_function=None):
         self.config = config
+        self.clf = clear_function
 
     def log(self, text):
         """
@@ -298,5 +369,64 @@ class Logger:
         log_file = os.path.join(log_directory,f'{tag}.log')
         with open(log_file, 'a', encoding="utf-8") as f:
             log_entry = f'{date} : {text}\n'
+            if self.clf is not None:
+                self.clf()
             print(log_entry, end='')  # Printing without extra newline since log_entry includes it
             f.write(log_entry)
+def timeout_handler(signum, frame):
+    """
+    Signal handler for raising a TimeoutError after a timeout.
+
+    This function is intended to be used with the signal module to raise
+    a TimeoutError after a certain period of time, interrupting the
+    program's flow, which can be caught with a try/except block elsewhere
+    in the code. Useful for implementing timeouts on operations that might
+    hang or run indefinitely.
+
+    Parameters:
+    signum : int
+        The signal number being handled. Generally, this will be signal.SIGALRM.
+    frame : frame
+        The current stack frame at the point the signal occurred. This might be
+        used for more advanced handling scenarios, but it's not used in this
+        basic handler.
+
+    Raises:
+    TimeoutError:
+        Always raised to indicate a timeout scenario.
+    """
+    raise TimeoutError("Operation timed out!")
+
+def haversine_distance(lat1, lon1, lat2, lon2, R=6.371e6):
+    """
+    Calculate the Haversine distance between two points on the earth specified by longitude and latitude.
+
+    The Haversine formula calculates the shortest distance over the earth’s surface, giving an 'as-the-crow-flies'
+    distance between the points (ignoring any hills, valleys, or other potential obstacles). This function uses
+    the radius of the earth specified by `R` but defaults to the mean earth radius if `R` is not provided.
+
+    Args:
+    lat1 (float): Latitude of the first point in degrees.
+    lon1 (float): Longitude of the first point in degrees.
+    lat2 (float): Latitude of the second point in degrees.
+    lon2 (float): Longitude of the second point in degrees.
+    R (float, optional): Earth radius in meters. Default is the mean earth radius (6.371e6 meters).
+
+    Returns:
+    float:  Distance between the points in meters.
+    """
+    # Convert latitude and longitude from degrees to radians
+    lat1_rad = lat1/180*np.pi
+    lon1_rad = lon1/180*np.pi
+    lat2_rad = lat2/180*np.pi
+    lon2_rad = lon2/180*np.pi
+
+    # Difference in coordinates
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    # Haversine formula
+    a = np.sin(dlat / 2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2)**2
+
+    return abs(R * 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a)))
+

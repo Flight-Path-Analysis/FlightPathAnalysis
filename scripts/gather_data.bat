@@ -1,3 +1,3 @@
 @echo off
 set PYTHONPATH=%cd%
-python scripts\gather_data.py
+python scripts\gather_flight_data.py

@@ -4,14 +4,32 @@ base-configs:
     root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
     # root-directory: 'C:\Users\andre\Dropbox\Personal Projects\FlightPathAnalysis'
     # Tag for current run for log files
-    tag: 'KLAX-KJFK_KJFK-EGLL_EGLL-KJFK_data_gather'
+    tag: 'IEM_Query_testing'
     # File containing the credentials for OpenSky database
     opensky-credentials: 'config/opensky_login.yml'
     # FIle containing the credentials for the weather database
     weather-credentials:
+    # Starting date of flights/weather of interest
+    start-date: '2023-01-01'
+    # Ending date of flights/weather of interest
+    end-date: '2023-01-02'
 
 # All configurations for gathering data
 data-gather:
+    # Time limit in seconds until a retry is required for gathering flights data
+    timeout: 300
+    # Number of retries for gathering flight data
+    retries: 3
+    # Size of per chunk of data to gather (in seconds)
+    chunk-size: 604800
+    # Routes of interest to be downloaded on the data gathering step
+    routes-of-interest: [
+    ['KLAX','KJFK'],
+    ['KJFK','EGLL'],
+    ['EGLL','KJFK']
+    ]
+    # Continue data gather from last attemp. If False, it will start from scratch
+    continue-from-last: True
     # Configurations interesting for gathering flight data.
     flights:
         # directory to output data at from the root directory
@@ -20,34 +38,28 @@ data-gather:
         hostname: 'data.opensky-network.org'
         # port through which to ssh
         port: 2230
-        # Routes of interest to be downloaded on the data gathering step
-        routes-of-interest: [
-        ['KLAX','KJFK'],
-        ['KJFK','EGLL'],
-        ['EGLL','KJFK']
-        ]
-        # Starting date of flights of interest
-        start-date: '2023-01-01'
-        # Ending date of flights of interest
-        end-date: '2023-02-01'
         # Bad Days csv
         bad-days-csv: 'data/flight/bad_days.csv'
-        # Size of per chunk of data to gather (in seconds)
-        chunk-size: 604800
-        # Time limit in seconds until a retry is required for gathering flights data
-        flight-data-timeout: 300
-        # Number of retries for gathering flight data
-        flight-data-retries: 3
-        # Time limit in seconds until a retry is required for gathering state vectors
-        state-vector-timeout: 300
-        # Number of retries for gathering state vectors
-        state-vector-retries: 3
         # Continue data gather from last attemp. If False, it will start from scratch
         continue-from-last: True
         # How close to the airports the flight must start/end for it to be valid
         coordinate-distance-thresh: 0.2
         # List of airports to be used in the data gathering step
         airport-list-csv: 'data/flight/airport_database.csv'
+    # Configurations interesting for gathering weather data.
+    weather:
+        # directory to output data at from the root directory
+        out-dir: 'data/weather/'
+        # How physically close the weather station needs to be to the flight route (not account for altitude) (meters)
+        haversine-distance-thresh: 10000
+        # Columns of interest to be downloaded on the data gathering step
+        columns-of-interest: ['station', 'valid', 'lon', 'lat', 'tmpf',
+                    'relh', 'drct', 'sknt', 'p01i', 'skyc1', 'skyc2',
+                    'skyc3', 'skyc4', 'skyl1', 'skyl2', 'skyl3', 'skyl4',
+                    'wxcodes', 'ice_accretion_1hr', 'metar']
+        # Number of closest stations to be used in the width estimation for gaussian interpolation
+        # The width associated to each station is the mean distance to the closest <n_avg_sigma> other stations.
+        n-avg-sigma: 5
 
 # All configurations for data compression
 data-compression:
@@ -70,10 +82,32 @@ data-compression:
 
 # Configurations for the statistical analysis of the data 
 statistics:
+    # Configurations to do with the interpolation data.
+    interpolation:
+        weather:
+            # Minimum time difference for the weather data to be considered in models and interpolation
+            time-thresh: 1800
+            # Minimum physical (haversine) distance difference for the weather data to be considered in models and interpolation
+            distance-thresh: 10000
     # Routes to be analyzed
     routes-to-analyze: [
     ['KJFK','KLAX']
     ]
+
+models:
+    temperature:
+        # Model to be used for the temperature interpolation
+        model: 'linear'
+        # Default temperature coefficient to be used in the linear interpolation
+        default-coefficient: -0.0117
+    wind:
+        model: 'linear'
+        default-coefficient: 0.02
+
+# All configurations for logging messages
+log:
+    # Directory where log files are located from the root directory
+    log-directory: 'logs/'
 
 # configurations for the plotting of the data and analysis
 plotting:
@@ -101,11 +135,5 @@ plotting:
     deviation-values: [1, 2, 3]
     # Extent of min and max values longitude and latitude (respectively) to be plotted: [min_lon, max_lon, min_lat, max_lat]
     # If left blank or None, it will be automatically calculated for the corresponding data.
-        # United States: [-121, -71, 13, 66]
-    map-extent: [-123, -70, 13, 66]
-
-# All configurations for logging messages
-log:
-    # Directory where log files are located from the root directory
-    log-directory: 'logs/'
-
+        # United States: [-125, -66.5, 24, 50]
+    map-extent: [-125, -66.5, 24, 50]
