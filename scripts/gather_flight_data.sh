@@ -1,4 +1,4 @@
 #!/bin/bash
 export PYTHONPATH=$(pwd)
-python scripts/gather_data.py
+python scripts/gather_flight_data.py
 

@@ -34,8 +34,6 @@ Note:
     - Ensure the specified paths, configurations, and dependencies are set up correctly
       before running the script.
 """
-# import sys
-# sys.path.append('.')
 import yaml
 import numpy as np
 import pandas as pd
@@ -48,7 +46,7 @@ from src.backend import compressors
 ROOT_PATH = '.'
 
 # Loading config file
-config_path = os.path.join(ROOT_PATH,'config','config.yml')
+config_path = os.path.join(ROOT_PATH, 'config', 'config.yml')
 with open(config_path, 'r', encoding="utf-8") as file:
     try:
         CONFIG = yaml.safe_load(file)
@@ -75,15 +73,16 @@ with open(credentials_path, 'r', encoding="utf-8") as file:
 
 # Defining Logger
 LOGGER = utils.Logger(CONFIG)
+LOGGER.log('--- Gathering Flight Data ---')
 
 CREDENTIALS['hostname'] = CONFIG['data-gather']['flights']['hostname']
 CREDENTIALS['port'] = CONFIG['data-gather']['flights']['port']
 CREDENTIALS['bad_days_csv'] = CONFIG['data-gather']['flights']['bad-days-csv']
-CREDENTIALS['chunk_size'] = CONFIG['data-gather']['flights']['chunk-size']
-CREDENTIALS['flight_data_timeout'] = CONFIG['data-gather']['flights']['flight-data-timeout']
-CREDENTIALS['state_vector_timeout'] = CONFIG['data-gather']['flights']['flight-data-timeout']
-CREDENTIALS['flight_data_retries'] = CONFIG['data-gather']['flights']['flight-data-retries']
-CREDENTIALS['state_vector_retries'] = CONFIG['data-gather']['flights']['flight-data-retries']
+CREDENTIALS['chunk_size'] = CONFIG['data-gather']['chunk-size']
+CREDENTIALS['flight_data_timeout'] = CONFIG['data-gather']['timeout']
+CREDENTIALS['state_vector_timeout'] = CONFIG['data-gather']['timeout']
+CREDENTIALS['flight_data_retries'] = CONFIG['data-gather']['retries']
+CREDENTIALS['state_vector_retries'] = CONFIG['data-gather']['retries']
 
 # Creates an instane of the Querier class used for querying the opensky database
 OPENSKY_QUERIER = opensky_query.Querier(
@@ -96,9 +95,9 @@ COMPRESSOR = compressors.CsvCompressor(CONFIG, logger=LOGGER)
 # List of columns of state_vectors to be compressed.
 COLUMNS_COMPRESS = ['lat', 'lon', 'baroaltitude', 'geoaltitude', 'heading', 'velocity']
 
-for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
-    start_date = CONFIG['data-gather']['flights']['start-date']
-    end_date = CONFIG['data-gather']['flights']['end-date']
+for airport_route in CONFIG['data-gather']['routes-of-interest']:
+    start_date = CONFIG['base-configs']['start-date']
+    end_date = CONFIG['base-configs']['end-date']
     departure_airport = airport_route[0]
     arrival_airport = airport_route[1]
     airports_df = pd.read_csv(CONFIG['data-gather']['flights']['airport-list-csv'], index_col=0)
@@ -112,7 +111,7 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
         os.makedirs(directory)
     if not os.path.exists(os.path.join(directory, 'state_vectors')):
                 os.makedirs(os.path.join(directory, 'state_vectors'))
-    if not CONFIG['data-gather']['flights']['continue-from-last'] or \
+    if not CONFIG['data-gather']['continue-from-last'] or \
         f'{flights_data_id}.csv' not in os.listdir(directory):
         flights = OPENSKY_QUERIER.query_flight_data(
             {'departure_airport': departure_airport,
@@ -190,4 +189,4 @@ for airport_route in CONFIG['data-gather']['flights']['routes-of-interest']:
                     LOGGER.log("Failed to load flight, saved for later, skipping for now.")
                     pass
 
-LOGGER.log('Done!')
+LOGGER.log('--- Finished Gathering Flight Data ---')
