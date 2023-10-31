@@ -50,14 +50,14 @@ def calibrate_stations(stations_data, config):
         wind_models_N[i].fit(elevations, wind_speeds_N)
     
     # Assign models to a new column in the DataFrame.
-    stations_data['temperature_model'] = temperature_models
-    stations_data['wind_model_E'] = wind_models_E
-    stations_data['wind_model_N'] = wind_models_N
+    stations_data['tmpf_model'] = temperature_models
+    stations_data['sknt_E_model'] = wind_models_E
+    stations_data['sknt_N_model'] = wind_models_N
     
     # Predict the sea-level temperature for each station using its respective model.
-    stations_data['tmpf_sea_level'] = [row['temperature_model'].predict([0])[0] for _, row in stations_data.iterrows()]
-    stations_data['sknt_E_sea_level'] = [row['wind_model_E'].predict([0])[0] for _, row in stations_data.iterrows()]
-    stations_data['sknt_N_sea_level'] = [row['wind_model_N'].predict([0])[0] for _, row in stations_data.iterrows()]
+    stations_data['tmpf_sea_level'] = [row['tmpf_model'].predict([0])[0] for _, row in stations_data.iterrows()]
+    stations_data['sknt_E_sea_level'] = [row['sknt_E_model'].predict([0])[0] for _, row in stations_data.iterrows()]
+    stations_data['sknt_N_sea_level'] = [row['sknt_E_model'].predict([0])[0] for _, row in stations_data.iterrows()]
 
     return stations_data
 

@@ -430,3 +430,99 @@ def haversine_distance(lat1, lon1, lat2, lon2, R=6.371e6):
 
     return abs(R * 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a)))
 
+def meters_to_degrees(meters, latitude):
+    """
+    Convert distance from meters to degrees at a specific latitude.
+
+    Args:
+    meters (float): Distance in meters.
+    latitude (float): Latitude at which the conversion is happening.
+
+    Returns:
+    float: Distance in degrees.
+    """
+    # Earth's radius in meters
+    EARTH_RADIUS = 6.371e6
+    
+    # Conversion from degrees to radians
+    latitude_radians = latitude/180*np.pi
+    
+    # Number of meters in a radian
+    meters_per_radian = EARTH_RADIUS
+
+    # Calculate the number of meters per degree of latitude and longitude
+    meters_per_degree_lat = (np.pi / 180) * EARTH_RADIUS
+    meters_per_degree_lon = (np.pi / 180) * EARTH_RADIUS * np.cos(latitude_radians)
+
+    # Calculate the distance in degrees
+    degrees_lat = meters / meters_per_degree_lat
+    degrees_lon = meters / meters_per_degree_lon
+
+    # We return the mean value considering changes in latitude may affect the circle shape
+    return (degrees_lat + degrees_lon) / 2
+
+def gaussian_interpolation(target, data, quantity):
+    """
+    Perform a Gaussian-weighted interpolation for a specified quantity based on geographic proximity.
+
+    This function computes distances between a target location and a set of locations in the data,
+    then applies a Gaussian weighting based on these distances and the 'sigma' values of the stations.
+    The result is a weighted average of the specified quantity, considering the influence of each
+    station's data based on its spatial relationship to the target point.
+
+    Parameters:
+    target (dict): A dictionary representing the target point, containing 'lat' and 'lon' keys with
+                   geographical coordinates.
+    data (pd.DataFrame): A DataFrame containing station data, each row representing a station. It must
+                         include 'lat', 'lon', and 'sigma' columns, representing the geographical
+                         coordinates of the station and the standard deviation of the Gaussian distribution
+                         used for weighting, respectively. The DataFrame also contains a column corresponding
+                         to the 'quantity' parameter that holds the values to be interpolated.
+    quantity (str): The name of the column in 'data' that represents the quantity to be interpolated. This
+                    column's values are numerically interpolated.
+
+    Returns:
+    float: The Gaussian-weighted interpolated value of the specified quantity at the target location.
+    """
+
+    distances = haversine_distance(target['lat'], target['lon'], data['lat'], data['lon'])
+    # If the target is too far way from any station (5 sigma), the measure is not reliable.
+    if min(distances) > 3*np.mean(data['sigma']):
+        return np.nan
+    weights = np.exp(-distances**2/(2*data['sigma']**2/10))
+    weights = weights/np.sum(weights)
+    avg = np.sum(weights*data[quantity])
+    return avg
+
+def haversine_distance(lat1, lon1, lat2, lon2, R=6.371e6):
+    """
+    Calculate the Haversine distance between two points on the earth specified by longitude and latitude.
+
+    The Haversine formula calculates the shortest distance over the earth’s surface, giving an 'as-the-crow-flies'
+    distance between the points (ignoring any hills, valleys, or other potential obstacles). This function uses
+    the radius of the earth specified by `R` but defaults to the mean earth radius if `R` is not provided.
+
+    Args:
+    lat1 (float): Latitude of the first point in degrees.
+    lon1 (float): Longitude of the first point in degrees.
+    lat2 (float): Latitude of the second point in degrees.
+    lon2 (float): Longitude of the second point in degrees.
+    R (float, optional): Earth radius in meters. Default is the mean earth radius (6.371e6 meters).
+
+    Returns:
+    float:  Distance between the points in meters.
+    """
+    # Convert latitude and longitude from degrees to radians
+    lat1_rad = lat1/180*np.pi
+    lon1_rad = lon1/180*np.pi
+    lat2_rad = lat2/180*np.pi
+    lon2_rad = lon2/180*np.pi
+
+    # Difference in coordinates
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    # Haversine formula
+    a = np.sin(dlat / 2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2)**2
+
+    return abs(R * 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a)))

@@ -21,7 +21,7 @@ data-gather:
     # Number of retries for gathering flight data
     retries: 3
     # Size of per chunk of data to gather (in seconds)
-    chunk-size: 604800
+    chunk-size: 86400
     # Routes of interest to be downloaded on the data gathering step
     routes-of-interest: [
     ['KLAX','KJFK'],
@@ -87,8 +87,6 @@ statistics:
         weather:
             # Minimum time difference for the weather data to be considered in models and interpolation
             time-thresh: 1800
-            # Minimum physical (haversine) distance difference for the weather data to be considered in models and interpolation
-            distance-thresh: 10000
     # Routes to be analyzed
     routes-to-analyze: [
     ['KJFK','KLAX']
@@ -125,6 +123,8 @@ plotting:
     cmap: 'cool'
     # Number of points to be used in lines
     point-precision: 100
+    # Number of points to be used x and y
+    lon-lat-precision: [200, 50]
     # Expectation value to be used when plotting
     expectation-measure: 'mean'
     # Deviation measure to be used when plotting
@@ -137,3 +137,4 @@ plotting:
     # If left blank or None, it will be automatically calculated for the corresponding data.
         # United States: [-125, -66.5, 24, 50]
     map-extent: [-125, -66.5, 24, 50]
+
