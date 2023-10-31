@@ -12,7 +12,7 @@ from shapely.geometry import MultiPolygon
 from scipy.stats import gaussian_kde
 from matplotlib.collections import LineCollection
 from matplotlib.patches import Circle
-from src.backend import utils
+from src.common import utils
 
 QUANTITY_NAMES = {
 'lat': 'Latitude (deg)',
