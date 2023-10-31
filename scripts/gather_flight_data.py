@@ -39,9 +39,9 @@ import numpy as np
 import pandas as pd
 import os
 
-from src.backend import opensky_query
-from src.backend import utils
-from src.backend import compressors
+from src.data import opensky_query
+from src.data import compressors
+from src.common import utils
 
 ROOT_PATH = '.'
 
