@@ -7,7 +7,7 @@ import json
 import time
 import numpy as np
 
-from src.backend import utils
+from src.common import utils
 
 class Querier:
     def __init__(self, config, logger=None):
