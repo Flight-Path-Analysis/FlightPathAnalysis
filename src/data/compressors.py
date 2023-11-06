@@ -2,6 +2,7 @@ import numpy as np
 from pympler import asizeof
 import pandas as pd
 import os
+from src.common import utils
 
 class CsvCompressor:
     """

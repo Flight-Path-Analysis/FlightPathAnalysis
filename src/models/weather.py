@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
-# import utils
+
 
 def calibrate_stations(stations_data, config):
     """
@@ -244,4 +244,3 @@ class AirDensityeModel():
             return self.interpolated_function(heights)
         else:
             raise ValueError('Unknown Air Density model')
-

@@ -48,8 +48,8 @@ class Querier:
     - query_flight_data: Executes the query and returns the results as a DataFrame.
     - query_state_vectors: Executes the query and returns the results as a DataFrame.
     """
-
     def __init__(self, credentials, config, logger=None):
+
         """
         Initialize an instance of the Querier class.
 
@@ -67,6 +67,7 @@ class Querier:
 
         if 'bad_days_csv' in config['data-gather']['flights']:
             self.bad_days_csv = config['data-gather']['flights']['bad_days_csv']
+
         else:
             self.bad_days_csv = None
 
@@ -97,6 +98,7 @@ class Querier:
         Raises:
         - TimeoutError: If the connection times out after the specified number of retries.
         """
+
         for _ in range(self.config['data-gather']['retries']):
             try:
                 time.sleep(10)
