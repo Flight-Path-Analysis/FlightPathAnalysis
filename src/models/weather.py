@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.interpolate import interp1d
+
 
 def calibrate_stations(stations_data, config):
     """
@@ -13,8 +15,6 @@ def calibrate_stations(stations_data, config):
                                   should correspond to a different station and contain columns for various 
                                   weather parameters, such as temperature, wind speed, and elevation.
                                   Expected columns are 'elevation', 'tmpf', 'sknt_E', and 'sknt_N'. 
-                                  If available, 'metar_tmpf', 'metar_elevation', 'metar_sknt_E', and 
-                                  'metar_sknt_N' are also used.
 
     config (dict): A dictionary containing the configuration settings for the temperature and wind models, 
                    including the type of model and any necessary default coefficients.
@@ -26,8 +26,10 @@ def calibrate_stations(stations_data, config):
     """
     # Prepare a container for the models. Each station will have its own model.
     temperature_models = [TemperatureModel(config) for _ in range(len(stations_data))]
-    wind_models_E = [WindModel(config) for _ in range(len(stations_data))]
-    wind_models_N = [WindModel(config) for _ in range(len(stations_data))]
+    wind_E_models = [WindModel(config) for _ in range(len(stations_data))]
+    wind_N_models = [WindModel(config) for _ in range(len(stations_data))]
+    air_pressure_models = [AirPressureModel(config) for _ in range(len(stations_data))]
+    air_density_models = [AirDensityeModel(config) for _ in range(len(stations_data))]
 
     # Iterate over stations data and fit models based on the data for each station.
     for i, row in stations_data.iterrows():
@@ -35,23 +37,16 @@ def calibrate_stations(stations_data, config):
         temperatures = [row['tmpf']]
         wind_speeds_E = [row['sknt_E']]
         wind_speeds_N = [row['sknt_N']]
-        # Adding metar data if available.
-        if 'metar_tmpf' in row:
-            elevations.append(row['metar_tmpf_elev'])
-            temperatures.append(row['metar_tmpf'])
-        if 'metar_sknt_E' in row and 'metar_sknt_N' in row:
-            wind_speeds_E.append(row['metar_sknt_E'])
-            wind_speeds_N.append(row['metar_sknt_N'])
 
         # Fit the model for this station.
         temperature_models[i].fit(elevations, temperatures)
-        wind_models_E[i].fit(elevations, wind_speeds_E)
-        wind_models_N[i].fit(elevations, wind_speeds_N)
+        wind_E_models[i].fit(elevations, wind_speeds_E)
+        wind_N_models[i].fit(elevations, wind_speeds_N)
     
     # Assign models to a new column in the DataFrame.
     stations_data['tmpf_model'] = temperature_models
-    stations_data['sknt_E_model'] = wind_models_E
-    stations_data['sknt_N_model'] = wind_models_N
+    stations_data['sknt_E_model'] = wind_E_models
+    stations_data['sknt_N_model'] = wind_N_models
     
     # Predict the sea-level temperature for each station using its respective model.
     stations_data['tmpf_sea_level'] = [row['tmpf_model'].predict([0])[0] for _, row in stations_data.iterrows()]
@@ -140,7 +135,7 @@ class WindModel:
         self.config = config
         self.model = config['models']['wind']['model']
         self.coeffs = []
-        self.fitted = False  # This attribute is set but not currently used
+        self.fitted = False
 
     def fit(self, heights, speeds):
         """
@@ -191,3 +186,61 @@ class WindModel:
             return np.polyval(self.coeffs, heights)
         else:
             raise ValueError('Unknown wind model')
+
+class AirPressureModel():
+    def __init__(self, config, temperature_model):
+        self.config = config
+        self.model = config['models']['air-pressure']['model']
+        self.coeffs = []
+        self.fitted = False
+
+    def fit(self, temperature_model):
+        if self.model == 'barometric':
+            max_height = config['models']['numerical']['max-height']
+            num = config['models']['numerical']['integration-precision']
+            g = config['models']['constants']['gravitational-acceleration']
+            R = config['models']['constants']['gas-constant']
+            M = config['models']['constants']['molar-mass-air']
+            P0 = config['models']['constants']['atm-pressure']
+
+            heights = np.linspace(0, max_height, num=num)
+            dh = max_height/num
+            temps = (model.predict(heights) - 32)*5/9 + 273.15
+            integrals = np.zeros(len(heights))
+            for i, h in enumerate(heights[1:], 1):
+                integrals[i] = integrals[i-1] + dh/temps[i]
+            pressures = P0*np.exp(-g*M/R*integrals)*0.01
+            self.interpolated_function = interp1d(heights, pressures)
+
+            self.fitted = True
+        else:
+            raise ValueError('Unknown Air Pressure model')
+
+    def predict(self, heights):
+        if self.model == 'barometric':
+            return self.interpolated_function(heights)
+        else:
+            raise ValueError('Unknown Air Pressure model')
+    
+class AirDensityeModel():
+    def __init__(self, config, temperature_model):
+        self.config = config
+        self.model = config['models']['air-density']['model']
+        self.coeffs = []
+        self.fitted = False
+
+    def fit(self, pressure_model, temperature_model):
+        if self.model == 'barometric':
+            R_d = config['models']['constant']['specific-gas-constant']
+            
+            self.interpolated_function = lambda x: pressure_model.predict(x)/(R_d*((temperature_model.predict(x) - 32)*5/9 + 273.15))
+
+            self.fitted = True
+        else:
+            raise ValueError('Unknown Air Density model')
+
+    def predict(self, heights):
+        if self.model == 'barometric':
+            return self.interpolated_function(heights)
+        else:
+            raise ValueError('Unknown Air Density model')

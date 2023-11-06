@@ -92,15 +92,47 @@ statistics:
     ['KJFK','KLAX']
     ]
 
+# Configurations for the models used in data processing and analysis
 models:
+    # Configurations for the temperature profile model
     temperature:
         # Model to be used for the temperature interpolation
         model: 'linear'
-        # Default temperature coefficient to be used in the linear interpolation
+        # Default temperature lapse rate to be used in the linear interpolation
         default-coefficient: -0.0117
+    # Configurations for the wind speed profile model
     wind:
+        # Model to be used for the wind speed interpolation
         model: 'linear'
+        # Default wind gradient coefficient to be used in the linear interpolation
         default-coefficient: 0.02
+    # Configurations for the air pressure profile model
+    air-pressure:
+        # Model to be used for the temperature interpolation
+        # barometric: P = P_0*exp(-g M/R int_0^h(1/T(h')dh))
+        model: 'barometric'
+    air-density:
+        # Model to be used for the density interpolation
+        # barometric: rho = P(h)/R_d/T(h)
+        model: 'barometric'
+    # Constants used through modeling
+    constants:
+        # Atmospheric pressure at sea level in Pascals
+        atm-pressure: 101325
+        # Molar mass of earth's air in kg/mol
+        molar-mass-air: 0.029
+        # Universal gas constant in J/mol/K
+        gas-constant: 8.314
+        # Gravitational Acceleration of earth
+        gravitational-acceleration: 9.81
+        # Specific Gas Constant for dry air in J/kg/K
+        specific-gas-constant: 287.05
+    # Configurations for numerical processes
+    numerical:
+        # Maximum height to compute weather models (in case of numerical) in meters
+        max-height: 20000
+        # Precision for integration
+        integration-precision: 10000
 
 # All configurations for logging messages
 log:

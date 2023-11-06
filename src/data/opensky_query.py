@@ -48,8 +48,8 @@ class Querier:
     - query_flight_data: Executes the query and returns the results as a DataFrame.
     - query_state_vectors: Executes the query and returns the results as a DataFrame.
     """
+    def __init__(self, credentials, config, logger=None):
 
-    def __init__(self, credentials, logger=None):
         """
         Initialize an instance of the Querier class.
 
@@ -62,10 +62,12 @@ class Querier:
         - logger (utils.Logger): The Logger class instance to log text outputs
         """
         self.credentials = credentials
+        self.config = config
         self.client = paramiko.SSHClient()
 
-        if "bad_days_csv" in credentials:
-            self.bad_days_csv = credentials["bad_days_csv"]
+        if 'bad_days_csv' in config['data-gather']['flights']:
+            self.bad_days_csv = config['data-gather']['flights']['bad_days_csv']
+
         else:
             self.bad_days_csv = None
 
@@ -96,18 +98,19 @@ class Querier:
         Raises:
         - TimeoutError: If the connection times out after the specified number of retries.
         """
-        for _ in range(self.credentials["flight_data_retries"]):
+
+        for _ in range(self.config['data-gather']['retries']):
             try:
                 time.sleep(10)
                 self.client.connect(
-                    self.credentials["hostname"],
-                    port=self.credentials["port"],
-                    username=self.credentials["username"],
-                    password=self.credentials["password"],
+                    self.config['data-gather']['flights']['hostname'],
+                    port=self.config['data-gather']['flights']['port'],
+                    username=self.credentials['username'],
+                    password=self.credentials['password'],
                 )
                 break
             except TimeoutError:
-                self.log_verbose("Operation timed out, retrying...")
+                self.log_verbose('Operation timed out, retrying...')
             finally:
                 signal.alarm(0)
 
@@ -215,25 +218,25 @@ baroaltitude, geoaltitude, onground, hour
 
         Returns:
         - list: A list of Unix timestamps representing the intervals at which queries will be made.
-                The length of each interval is determined by `self.credentials['chunk_size']`.
+                The length of each interval is determined by `self.config['data-gather']['chunk-size']`.
                 The last element in the list is always the 'end' timestamp from `dates_unix`.
 
         Note:
         The returned list of timestamps represents the intervals that the data fetching
         will occur. If the total time range is less than or equal to
-        `self.credentials['chunk_size']`, the function returns the original start and
+        `self.config['data-gather']['chunk-size']`, the function returns the original start and
         end timestamps. Otherwise, the function returns evenly spaced timestamps at
-        intervals of `self.credentials['chunk_size']` between the original start and
+        intervals of `self.config['data-gather']['chunk-size']` between the original start and
         end timestamps.
         """
-        if dates_unix["end"] - dates_unix["start"] <= self.credentials["chunk_size"]:
-            dates = [dates_unix["start"], dates_unix["end"]]
+        if dates_unix['end'] - dates_unix['start'] <= self.config['data-gather']['chunk-size']:
+            dates = [dates_unix['start'], dates_unix['end']]
         else:
             dates = list(
                 range(
-                    dates_unix["start"],
-                    dates_unix["end"],
-                    self.credentials["chunk_size"],
+                    dates_unix['start'],
+                    dates_unix['end'],
+                    self.config['data-gather']['chunk-size'],
                 )
             )
             if dates[-1] != dates_unix["end"]:
@@ -415,9 +418,9 @@ baroaltitude, geoaltitude, onground, hour
                 f"Querying data for flights from {airports['departure_airport']} \
 to {airports['arrival_airport']} between the dates {dates_str['start']} and {dates_str['end']}"
             )
-            for _ in range(self.credentials["flight_data_retries"]):
+            for _ in range(self.config['data-gather']['retries']):
                 try:
-                    signal.alarm(self.credentials["flight_data_timeout"])
+                    signal.alarm(self.config['data-gather']['timeout'])
                     query_results, bad_days_df = self.handle_flight_data_query(
                         airports, dates_unix, bad_days_df
                     )
@@ -491,7 +494,6 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
         # Reads and decodes query results
         query_results["stdout"] = query_results["stdout"].read().decode()
         query_results["stderr"] = query_results["stderr"].read().decode()
-
         # Closing client
         self.client.close()
 
@@ -571,16 +573,15 @@ to {airports['arrival_airport']} between the dates {dates_str['start']} and {dat
 between the times {times_str['start']} and {times_str['end']}"
         )
 
-        for _ in range(self.credentials["state_vector_retries"]):
+        for _ in range(self.config['data-gather']['retries']):
             try:
-                signal.alarm(self.credentials["flight_data_timeout"])
+                signal.alarm(self.config['data-gather']['timeout'])
                 query_results = self.handle_state_vector_query(
-                    icao24, times_unix["start"], times_unix["end"]
+                    icao24, times_unix['start'], times_unix['end']
                 )
                 break
             except TimeoutError:
-                self.log_verbose("Operation timed out, retrying...")
+                self.log_verbose('Operation timed out, retrying...')
             finally:
                 signal.alarm(0)
-
-        return utils.parse_opensky_to_dataframe(query_results["stdout"])
+        return utils.parse_opensky_to_dataframe(query_results['stdout'])
