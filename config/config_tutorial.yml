@@ -1,0 +1,172 @@
+# Base configurations for runs
+base-configs:
+    # Root directory of where the repo is located
+    root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
+    # root-directory: 'C:\Users\andre\Dropbox\Personal Projects\FlightPathAnalysis'
+    # Tag for current run for log files
+    tag: 'tutorial'
+    # File containing the credentials for OpenSky database
+    opensky-credentials: 'config/opensky_login.yml'
+    # FIle containing the credentials for the weather database
+    weather-credentials:
+    # Starting date of flights/weather of interest
+    start-date: '2023-01-01'
+    # Ending date of flights/weather of interest
+    end-date: '2023-01-02'
+
+# All configurations for gathering data
+data-gather:
+    # Time limit in seconds until a retry is required for gathering flights data
+    timeout: 300
+    # Number of retries for gathering flight data
+    retries: 3
+    # Size of per chunk of data to gather (in seconds)
+    chunk-size: 86400
+    # Routes of interest to be downloaded on the data gathering step
+    routes-of-interest: [
+    ['KLAX','KJFK'],
+    ['KJFK','EGLL'],
+    ['EGLL','KJFK']
+    ]
+    # Continue data gather from last attemp. If False, it will start from scratch
+    continue-from-last: True
+    # Configurations interesting for gathering flight data.
+    flights:
+        # directory to output data at from the root directory
+        out-dir: 'data/flight/'
+        # hostname of the server
+        hostname: 'data.opensky-network.org'
+        # port through which to ssh
+        port: 2230
+        # Bad Days csv
+        bad-days-csv: 'data/flight/bad_days.csv'
+        # Continue data gather from last attemp. If False, it will start from scratch
+        continue-from-last: True
+        # How close to the airports the flight must start/end for it to be valid
+        coordinate-distance-thresh: 0.2
+        # List of airports to be used in the data gathering step
+        airport-list-csv: 'data/flight/airport_database.csv'
+    # Configurations interesting for gathering weather data.
+    weather:
+        # directory to output data at from the root directory
+        out-dir: 'data/weather/'
+        # How physically close the weather station needs to be to the flight route (not account for altitude) (meters)
+        haversine-distance-thresh: 10000
+        # Columns of interest to be downloaded on the data gathering step
+        columns-of-interest: ['station', 'valid', 'lon', 'lat', 'tmpf',
+                    'relh', 'drct', 'sknt', 'p01i', 'skyc1', 'skyc2',
+                    'skyc3', 'skyc4', 'skyl1', 'skyl2', 'skyl3', 'skyl4',
+                    'wxcodes', 'ice_accretion_1hr', 'metar']
+        # Number of closest stations to be used in the width estimation for gaussian interpolation
+        # The width associated to each station is the mean distance to the closest <n_avg_sigma> other stations.
+        n-avg-sigma: 5
+
+# All configurations for data compression
+data-compression:
+    # Which compressor to use in the data
+    compressor: 'csv-compressor'
+    # Configurations defining the CSV-compression algorithm
+    csv-compressor:
+        # Number of interpolated points to be saved in the csv compression
+        num-points: 1000
+    # Configurations defining the spline-compression algorithm
+    spline-compressor:
+        # The Maximum alowed percentage error between the data and the interpolation
+        max-error: 0.01
+        # Smallest precision step to which narrow down s
+        s-minimum-precision: 0.001
+        # Initial precisionf step of s, must be large
+        s-base-precision: 10000000000000000
+        # Degree of the spline to be used
+        degree: 2
+
+# Configurations for the statistical analysis of the data 
+statistics:
+    # Configurations to do with the interpolation data.
+    interpolation:
+        weather:
+            # Minimum time difference for the weather data to be considered in models and interpolation
+            time-thresh: 1800
+    # Routes to be analyzed
+    routes-to-analyze: [
+    ['KJFK','KLAX']
+    ]
+
+# Configurations for the models used in data processing and analysis
+models:
+    # Configurations for the temperature profile model
+    temperature:
+        # Model to be used for the temperature interpolation
+        model: 'linear'
+        # Default temperature lapse rate to be used in the linear interpolation
+        default-coefficient: -0.0117
+    # Configurations for the wind speed profile model
+    wind:
+        # Model to be used for the wind speed interpolation
+        model: 'linear'
+        # Default wind gradient coefficient to be used in the linear interpolation
+        default-coefficient: 0.02
+    # Configurations for the air pressure profile model
+    air-pressure:
+        # Model to be used for the temperature interpolation
+        # barometric: P = P_0*exp(-g M/R int_0^h(1/T(h')dh))
+        model: 'barometric'
+    air-density:
+        # Model to be used for the density interpolation
+        # barometric: rho = P(h)/R_d/T(h)
+        model: 'barometric'
+    # Constants used through modeling
+    constants:
+        # Atmospheric pressure at sea level in Pascals
+        atm-pressure: 101325
+        # Molar mass of earth's air in kg/mol
+        molar-mass-air: 0.029
+        # Universal gas constant in J/mol/K
+        gas-constant: 8.314
+        # Gravitational Acceleration of earth
+        gravitational-acceleration: 9.81
+        # Specific Gas Constant for dry air in J/kg/K
+        specific-gas-constant: 287.05
+    # Configurations for numerical processes
+    numerical:
+        # Maximum height to compute weather models (in case of numerical) in meters
+        max-height: 20000
+        # Precision for integration
+        integration-precision: 10000
+
+# All configurations for logging messages
+log:
+    # Directory where log files are located from the root directory
+    log-directory: 'logs/'
+
+# configurations for the plotting of the data and analysis
+plotting:
+    # x and y dimensions of the plot figures
+    fig-size: [10, 6.17]
+    # Font size of the axis
+    axis-fontsize: 20
+    # Font size of the tick labels
+    tick-fontsize: 15
+    # Font size of the title
+    title-fontsize: 25
+    # Font size of the legend
+    legend-fontsize: 15
+    # Default color map to be used (all options here: https://matplotlib.org/stable/users/explain/colors/colormaps.html)
+    cmap: 'cool'
+    # Number of points to be used in lines
+    point-precision: 100
+    # Number of points to be used x and y
+    lon-lat-precision: [200, 50]
+    # Expectation value to be used when plotting
+    expectation-measure: 'mean'
+    # Deviation measure to be used when plotting
+    deviation-measure: 'std'
+    # Deviation values to be used when plotting.
+        # If std, numbers indicate how many standard deviations to plot ([1,2,3] -> plots 1, 2, and 3 sigmas)
+        # if pct, indicated which percentiles to plot ([50, 75, 90] -> plots 50th, 75th, and 90th percentiles)
+    deviation-values: [1, 2, 3]
+    # Extent of min and max values longitude and latitude (respectively) to be plotted: [min_lon, max_lon, min_lat, max_lat]
+    # If left blank or None, it will be automatically calculated for the corresponding data.
+        # United States: [-125, -66.5, 24, 50]
+    map-extent: [-125, -66.5, 24, 50]
+

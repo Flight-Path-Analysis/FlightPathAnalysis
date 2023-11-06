@@ -75,18 +75,10 @@ with open(credentials_path, 'r', encoding="utf-8") as file:
 LOGGER = utils.Logger(CONFIG)
 LOGGER.log('--- Gathering Flight Data ---')
 
-CREDENTIALS['hostname'] = CONFIG['data-gather']['flights']['hostname']
-CREDENTIALS['port'] = CONFIG['data-gather']['flights']['port']
-CREDENTIALS['bad_days_csv'] = CONFIG['data-gather']['flights']['bad-days-csv']
-CREDENTIALS['chunk_size'] = CONFIG['data-gather']['chunk-size']
-CREDENTIALS['flight_data_timeout'] = CONFIG['data-gather']['timeout']
-CREDENTIALS['state_vector_timeout'] = CONFIG['data-gather']['timeout']
-CREDENTIALS['flight_data_retries'] = CONFIG['data-gather']['retries']
-CREDENTIALS['state_vector_retries'] = CONFIG['data-gather']['retries']
-
 # Creates an instane of the Querier class used for querying the opensky database
 OPENSKY_QUERIER = opensky_query.Querier(
     CREDENTIALS,
+    CONFIG,
     logger=LOGGER)
 
 # Creates an instance of the SplineCompressor class.
@@ -136,7 +128,7 @@ for airport_route in CONFIG['data-gather']['routes-of-interest']:
                 estdepartureairport = flight['estdepartureairport']
                 estarrivalairport = flight['estarrivalairport']
                 flight_id = f"{icao24}_{firstseen}_{lastseen}_\
-    {estdepartureairport}_{estarrivalairport}"
+{estdepartureairport}_{estarrivalairport}"
                 filename = os.path.join(directory, 'state_vectors', f'{flight_id}.csv')
 
                 flights.at[i, 'attempts'] += 1
@@ -185,8 +177,8 @@ for airport_route in CONFIG['data-gather']['routes-of-interest']:
                 except KeyboardInterrupt:
                     LOGGER.log("KeyboardInterrupt caught. Exiting the program.")
                     raise
-                except:
-                    LOGGER.log("Failed to load flight, saved for later, skipping for now.")
+                except Exception as e:  # Captures any exception
+                    LOGGER.log(f"Failed to load flight due to error: {e}, saved for later, skipping for now.")
                     pass
 
 LOGGER.log('--- Finished Gathering Flight Data ---')
