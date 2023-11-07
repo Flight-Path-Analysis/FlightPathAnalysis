@@ -30,11 +30,14 @@ def calibrate_stations(stations_data, config):
     wind_N_models = [WindModel(config) for _ in range(len(stations_data))]
     air_pressure_models = [AirPressureModel(config) for _ in range(len(stations_data))]
     air_density_models = [AirDensityeModel(config) for _ in range(len(stations_data))]
+    cloud_models = [CloudModel(config) for _ in range(len(stations_data))]
 
     # Iterate over stations data and fit models based on the data for each station.
     for i, row in stations_data.iterrows():
         elevations = [row['elevation']]
         temperatures = [row['tmpf']]
+        clouds = row['skyc1', 'skyc2', 'skyc3', 'skyc4'].values.tolist()
+        cloud_levels = row['skyl1', 'skyl2', 'skyl3', 'skyl4'].values.tolist()
         wind_speeds_E = [row['sknt_E']]
         wind_speeds_N = [row['sknt_N']]
 
@@ -42,17 +45,26 @@ def calibrate_stations(stations_data, config):
         temperature_models[i].fit(elevations, temperatures)
         wind_E_models[i].fit(elevations, wind_speeds_E)
         wind_N_models[i].fit(elevations, wind_speeds_N)
-    
+        air_pressure_models[i].fit(temperature_models[i])
+        air_density_models[i].fit(air_pressure_models[i], temperature_models[i])
+        cloud_models[i].fit(cloud_levels, clouds)
+
     # Assign models to a new column in the DataFrame.
     stations_data['tmpf_model'] = temperature_models
     stations_data['sknt_E_model'] = wind_E_models
     stations_data['sknt_N_model'] = wind_N_models
+    stations_data['air_pressure_model'] = air_pressure_models
+    stations_data['air_density_model'] = air_density_models
+    stations_data['cloud_model'] = cloud_models
     
     # Predict the sea-level temperature for each station using its respective model.
     stations_data['tmpf_sea_level'] = [row['tmpf_model'].predict([0])[0] for _, row in stations_data.iterrows()]
     stations_data['sknt_E_sea_level'] = [row['sknt_E_model'].predict([0])[0] for _, row in stations_data.iterrows()]
     stations_data['sknt_N_sea_level'] = [row['sknt_E_model'].predict([0])[0] for _, row in stations_data.iterrows()]
-
+    stations_data['air_pressure_sea_level'] = [row['air_pressure_model'].predict([0])[0] for _, row in stations_data.iterrows()]
+    stations_data['air_density_sea_level'] = [row['air_density_model'].predict([0])[0] for _, row in stations_data.iterrows()]
+    stations_data['cloud_sea_level'] = [row['cloud_model'].predict([0])[0] for _, row in stations_data.iterrows()]
+    
     return stations_data
 
 class TemperatureModel:
@@ -188,7 +200,7 @@ class WindModel:
             raise ValueError('Unknown wind model')
 
 class AirPressureModel():
-    def __init__(self, config, temperature_model):
+    def __init__(self, config):
         self.config = config
         self.model = config['models']['air-pressure']['model']
         self.coeffs = []
@@ -196,16 +208,16 @@ class AirPressureModel():
 
     def fit(self, temperature_model):
         if self.model == 'barometric':
-            max_height = config['models']['numerical']['max-height']
-            num = config['models']['numerical']['integration-precision']
-            g = config['models']['constants']['gravitational-acceleration']
-            R = config['models']['constants']['gas-constant']
-            M = config['models']['constants']['molar-mass-air']
-            P0 = config['models']['constants']['atm-pressure']
+            max_height = self.config['models']['numerical']['max-height']
+            num = self.config['models']['numerical']['integration-precision']
+            g = self.config['models']['constants']['gravitational-acceleration']
+            R = self.config['models']['constants']['gas-constant']
+            M = self.config['models']['constants']['molar-mass-air']
+            P0 = self.config['models']['constants']['atm-pressure']
 
             heights = np.linspace(0, max_height, num=num)
             dh = max_height/num
-            temps = (model.predict(heights) - 32)*5/9 + 273.15
+            temps = (temperature_model.predict(heights) - 32)*5/9 + 273.15
             integrals = np.zeros(len(heights))
             for i, h in enumerate(heights[1:], 1):
                 integrals[i] = integrals[i-1] + dh/temps[i]
@@ -223,7 +235,7 @@ class AirPressureModel():
             raise ValueError('Unknown Air Pressure model')
     
 class AirDensityeModel():
-    def __init__(self, config, temperature_model):
+    def __init__(self, config):
         self.config = config
         self.model = config['models']['air-density']['model']
         self.coeffs = []
@@ -231,7 +243,7 @@ class AirDensityeModel():
 
     def fit(self, pressure_model, temperature_model):
         if self.model == 'barometric':
-            R_d = config['models']['constant']['specific-gas-constant']
+            R_d = self.config['models']['constant']['specific-gas-constant']
             
             self.interpolated_function = lambda x: pressure_model.predict(x)/(R_d*((temperature_model.predict(x) - 32)*5/9 + 273.15))
 
@@ -244,3 +256,31 @@ class AirDensityeModel():
             return self.interpolated_function(heights)
         else:
             raise ValueError('Unknown Air Density model')
+class CloudModel():
+    def __init__(self, config):
+        self.config = config
+        self.fitted = False
+
+    def fit(self, cloud_levels, clouds):
+        def interpolate_cloud_value(height):
+            # Filter out any NaN values from the arrays
+            valid_indices = ~np.isnan(clouds) & ~np.isnan(cloud_levels)
+            filtered_clouds = np.array(clouds)[valid_indices]
+            filtered_levels = np.array(cloud_levels)[valid_indices]
+            
+            # Ensure the arrays are sorted by cloud level
+            sorted_indices = np.argsort(filtered_levels)
+            sorted_clouds = filtered_clouds[sorted_indices]
+            sorted_levels = filtered_levels[sorted_indices]
+
+            # If height is outside the range, clip it to the range
+            height = np.clip(height, sorted_levels[0], sorted_levels[-1])
+
+            # Interpolate the cloud value at the specified height
+            interpolated_value = np.interp(height, sorted_levels, sorted_clouds)
+
+            return interpolated_value
+        self.interpolated_function = interpolate_cloud_value
+        self.fitted = True
+    def predict(self, heights):
+        return self.interpolated_function(heights)

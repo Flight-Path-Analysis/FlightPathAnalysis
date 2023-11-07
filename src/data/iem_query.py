@@ -206,6 +206,21 @@ class Querier:
         # Convert temperature from Fahrenheit to Celsius
         data['tmpc'] = (data['tmpf']-32)*5/9
 
+        # Convert Cloud Coverage from oktas to percentage
+        def sky_condition_to_numeric(condition):
+            mapping = {
+                'CLR': 0.0,
+                'FEW': 0.2,
+                'SCT': 0.4,
+                'BKN': 0.6,
+                'OVC': 0.8,
+                'VV': 1.0
+            }
+            # Return the numeric value corresponding to the condition, NaN if not found
+            return mapping.get(condition, np.nan)
+        for i in range(1, 5):
+            data[f'skyc{i}'] = data[f'skyc{i}'].apply(sky_condition_to_numeric)
+
         # Sort the data by timestamp, reindexing the DataFrame
         data.sort_values(by='timestamp', ignore_index=True, inplace=True)
 
