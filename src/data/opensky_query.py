@@ -27,6 +27,7 @@ import datetime
 import time
 import paramiko
 import pandas as pd
+import numpy as np
 
 from src.common import utils
 
@@ -584,4 +585,17 @@ between the times {times_str['start']} and {times_str['end']}"
                 self.log_verbose('Operation timed out, retrying...')
             finally:
                 signal.alarm(0)
-        return utils.parse_opensky_to_dataframe(query_results['stdout'])
+        state_vectors = utils.parse_opensky_to_dataframe(query_results['stdout'])
+        # Cleaning Data
+        cols_to_check = ['time',
+                        'lat',
+                        'lon',
+                        'velocity',
+                        'heading',
+                        'baroaltitude',
+                        'geoaltitude',
+                        'hour']
+        for col in cols_to_check:
+            state_vectors[col] = state_vectors[col].apply(
+                lambda x: np.nan if isinstance(x, str) else x)
+        return state_vectors

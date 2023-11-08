@@ -44,7 +44,7 @@ for flight_path in flight_paths:
     directory_name = f'{flight_path[0]}_{flight_path[1]}'
     flight_data = pd.read_csv(os.path.join(ROOT_PATH, CONFIG['data-gather']['flights']['out-dir'], directory_name, f'{flights_data_id}.csv'))
     data_directory = os.path.join(ROOT_PATH, CONFIG['data-gather']['flights']['out-dir'], directory_name, 'state_vectors')
-    flight_files = [f for f in os.listdir(data_directory) is f.endswith('.csv')]
+    flight_files = [f for f in os.listdir(data_directory) if f.endswith('.csv')]
     for file in flight_files:
         LOGGER.log(f'Loading file {file}')
         flight = COMPRESSOR.decode_to_dataframe_from_file(os.path.join(data_directory, file))

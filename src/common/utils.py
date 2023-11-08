@@ -31,6 +31,10 @@ import dateutil.parser
 import numpy as np
 import pandas as pd
 import math
+<<<<<<< HEAD
+=======
+import numba
+>>>>>>> 34e1d85 (nothing)
 
 def to_number(s):
     """
@@ -398,6 +402,7 @@ def timeout_handler(signum, frame):
     """
     raise TimeoutError("Operation timed out!")
 
+@numba.njit
 def haversine_distance(lat1, lon1, lat2, lon2, R=6.371e6):
     """
     Calculate the Haversine distance between two points on the earth specified by longitude and latitude.
@@ -429,7 +434,7 @@ def haversine_distance(lat1, lon1, lat2, lon2, R=6.371e6):
     # Haversine formula
     a = np.sin(dlat / 2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2)**2
 
-    return abs(R * 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a)))
+    return np.abs(R * 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a)))
 
 def haversine_bearing(lat1, lon1, lat2, lon2):
     # Convert latitude and longitude from degrees to radians
@@ -514,4 +519,10 @@ def gaussian_interpolation(target, data, quantity):
     weights = np.exp(-distances**2/(2*data['sigma']**2/10))
     weights = weights/np.sum(weights)
     avg = np.sum(weights*data[quantity])
+<<<<<<< HEAD
     return avg
+=======
+    return avg
+
+MISSING_FUNCTION=object()
+>>>>>>> 34e1d85 (nothing)

@@ -20,3 +20,6 @@ logs/*
 !logs/.gitkeep
 data/flight/bad_days.csv
 config/config_mac.yml
+tutorials/tutorial_data
+tutorials/tutorial_data/*
+tutorials/logs
