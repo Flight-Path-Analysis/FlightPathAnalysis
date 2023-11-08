@@ -31,10 +31,7 @@ import dateutil.parser
 import numpy as np
 import pandas as pd
 import math
-<<<<<<< HEAD
-=======
 import numba
->>>>>>> 34e1d85 (nothing)
 
 def to_number(s):
     """
@@ -519,10 +516,6 @@ def gaussian_interpolation(target, data, quantity):
     weights = np.exp(-distances**2/(2*data['sigma']**2/10))
     weights = weights/np.sum(weights)
     avg = np.sum(weights*data[quantity])
-<<<<<<< HEAD
-    return avg
-=======
     return avg
 
 MISSING_FUNCTION=object()
->>>>>>> 34e1d85 (nothing)

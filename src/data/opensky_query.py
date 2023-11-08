@@ -598,4 +598,6 @@ between the times {times_str['start']} and {times_str['end']}"
         for col in cols_to_check:
             state_vectors[col] = state_vectors[col].apply(
                 lambda x: np.nan if isinstance(x, str) else x)
+        cols_to_check = ['lat', 'lon']
+        state_vectors = state_vectors.drop_duplicates(subset=cols_to_check, keep='first')
         return state_vectors
