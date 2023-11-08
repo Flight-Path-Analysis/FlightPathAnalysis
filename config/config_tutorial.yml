@@ -49,7 +49,7 @@ data-gather:
     # Configurations interesting for gathering weather data.
     weather:
         # directory to output data at from the root directory
-        out-dir: 'data/weather/'
+        out-dir: 'tutorials/tutorial_data/'
         # How physically close the weather station needs to be to the flight route (not account for altitude) (meters)
         haversine-distance-thresh: 10000
         # Columns of interest to be downloaded on the data gathering step
@@ -69,16 +69,6 @@ data-compression:
     csv-compressor:
         # Number of interpolated points to be saved in the csv compression
         num-points: 1000
-    # Configurations defining the spline-compression algorithm
-    spline-compressor:
-        # The Maximum alowed percentage error between the data and the interpolation
-        max-error: 0.01
-        # Smallest precision step to which narrow down s
-        s-minimum-precision: 0.001
-        # Initial precisionf step of s, must be large
-        s-base-precision: 10000000000000000
-        # Degree of the spline to be used
-        degree: 2
 
 # Configurations for the statistical analysis of the data 
 statistics:
@@ -87,6 +77,9 @@ statistics:
         weather:
             # Minimum time difference for the weather data to be considered in models and interpolation
             time-thresh: 1800
+        flights:
+            # Step (in seconds) to be used in weather estimation for flights. Each seconds takes about 0.1 seconds to compute.
+            step: 60
     # Routes to be analyzed
     routes-to-analyze: [
     ['KJFK','KLAX']
@@ -132,7 +125,7 @@ models:
         # Maximum height to compute weather models (in case of numerical) in meters
         max-height: 20000
         # Precision for integration
-        integration-precision: 10000
+        integration-precision: 100
 
 # All configurations for logging messages
 log:

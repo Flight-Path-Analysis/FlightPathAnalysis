@@ -30,6 +30,8 @@ import dateutil.parser
 
 import numpy as np
 import pandas as pd
+import math
+import numba
 
 def to_number(s):
     """
@@ -397,6 +399,7 @@ def timeout_handler(signum, frame):
     """
     raise TimeoutError("Operation timed out!")
 
+@numba.njit
 def haversine_distance(lat1, lon1, lat2, lon2, R=6.371e6):
     """
     Calculate the Haversine distance between two points on the earth specified by longitude and latitude.
@@ -428,9 +431,32 @@ def haversine_distance(lat1, lon1, lat2, lon2, R=6.371e6):
     # Haversine formula
     a = np.sin(dlat / 2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2)**2
 
-    return abs(R * 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a)))
+    return np.abs(R * 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a)))
 
-def meters_to_degrees(meters, latitude):
+def haversine_bearing(lat1, lon1, lat2, lon2):
+    # Convert latitude and longitude from degrees to radians
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    lon1 = math.radians(lon1)
+    lon2 = math.radians(lon2)
+
+    # Calculate the difference between the longitudes
+    dLon = lon2 - lon1
+
+    # Calculate the bearing
+    x = math.sin(dLon) * math.cos(lat2)
+    y = math.cos(lat1) * math.sin(lat2) - (math.sin(lat1) * math.cos(lat2) * math.cos(dLon))
+    initial_bearing = math.atan2(x, y)
+
+    # Convert bearing from radians to degrees
+    initial_bearing = math.degrees(initial_bearing)
+    
+    # Normalize the bearing to be between 0 and 360 degrees
+    compass_bearing = (initial_bearing + 360) % 360
+
+    return compass_bearing
+
+def meters_to_degrees(meters, latitude, R=6.371e6):
     """
     Convert distance from meters to degrees at a specific latitude.
 
@@ -441,18 +467,16 @@ def meters_to_degrees(meters, latitude):
     Returns:
     float: Distance in degrees.
     """
-    # Earth's radius in meters
-    EARTH_RADIUS = 6.371e6
     
     # Conversion from degrees to radians
     latitude_radians = latitude/180*np.pi
     
     # Number of meters in a radian
-    meters_per_radian = EARTH_RADIUS
+    meters_per_radian = R
 
     # Calculate the number of meters per degree of latitude and longitude
-    meters_per_degree_lat = (np.pi / 180) * EARTH_RADIUS
-    meters_per_degree_lon = (np.pi / 180) * EARTH_RADIUS * np.cos(latitude_radians)
+    meters_per_degree_lat = (np.pi / 180) * R
+    meters_per_degree_lon = (np.pi / 180) * R * np.cos(latitude_radians)
 
     # Calculate the distance in degrees
     degrees_lat = meters / meters_per_degree_lat
@@ -494,35 +518,4 @@ def gaussian_interpolation(target, data, quantity):
     avg = np.sum(weights*data[quantity])
     return avg
 
-def haversine_distance(lat1, lon1, lat2, lon2, R=6.371e6):
-    """
-    Calculate the Haversine distance between two points on the earth specified by longitude and latitude.
-
-    The Haversine formula calculates the shortest distance over the earth’s surface, giving an 'as-the-crow-flies'
-    distance between the points (ignoring any hills, valleys, or other potential obstacles). This function uses
-    the radius of the earth specified by `R` but defaults to the mean earth radius if `R` is not provided.
-
-    Args:
-    lat1 (float): Latitude of the first point in degrees.
-    lon1 (float): Longitude of the first point in degrees.
-    lat2 (float): Latitude of the second point in degrees.
-    lon2 (float): Longitude of the second point in degrees.
-    R (float, optional): Earth radius in meters. Default is the mean earth radius (6.371e6 meters).
-
-    Returns:
-    float:  Distance between the points in meters.
-    """
-    # Convert latitude and longitude from degrees to radians
-    lat1_rad = lat1/180*np.pi
-    lon1_rad = lon1/180*np.pi
-    lat2_rad = lat2/180*np.pi
-    lon2_rad = lon2/180*np.pi
-
-    # Difference in coordinates
-    dlat = lat2_rad - lat1_rad
-    dlon = lon2_rad - lon1_rad
-
-    # Haversine formula
-    a = np.sin(dlat / 2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2)**2
-
-    return abs(R * 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a)))
+MISSING_FUNCTION=object()

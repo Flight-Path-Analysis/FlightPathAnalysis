@@ -139,5 +139,7 @@ class CsvCompressor:
             df_new[col] = np.interp(df_new["time"], dataframe["time"], dataframe[col])
             if col in ("lat", "heading"):
                 df_new[col] = np.mod(df_new[col], 360)
-
+        df_new = pd.DataFrame(df_new)
+        cols_to_check = ['lat', 'lon']
+        df_new = df_new.drop_duplicates(subset=cols_to_check, keep='first')
         return pd.DataFrame(df_new)
