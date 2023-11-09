@@ -57,7 +57,7 @@ nbclient==0.8.0
 nbconvert==7.10.0
 nbformat==5.9.2
 notebook_shim==0.2.3
-numpy==1.26.0
+numpy==1.26.1
 overrides==7.4.0
 packaging==23.2
 pandas==2.1.1
