@@ -49,7 +49,7 @@ data-gather:
     # Configurations interesting for gathering weather data.
     weather:
         # directory to output data at from the root directory
-        out-dir: 'tutorials/tutorial_data/'
+        out-dir: 'tutorial_data/'
         # How physically close the weather station needs to be to the flight route (not account for altitude) (meters)
         haversine-distance-thresh: 10000
         # Columns of interest to be downloaded on the data gathering step
