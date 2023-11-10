@@ -62,10 +62,18 @@ class WeatherInterpolator:
             self.logger.log(message)
 
     def load_relevant_files(self, time):
-        # Calculate the start and end times of interest
-        time_thresh = self.config['statistics']['interpolation']['weather']['time-thresh']
-        start_time = time - time_thresh
-        end_time = time + time_thresh
+        # Determine if the input is a single time or a range
+        if isinstance(time, list) and len(time) == 2:
+            # Time range provided
+            start_time, end_time = time
+            time_thresh = self.config['statistics']['interpolation']['weather']['time-thresh']
+            start_time -= time_thresh
+            end_time += time_thresh
+        else:
+            # Single time provided, calculate the start and end times of interest
+            time_thresh = self.config['statistics']['interpolation']['weather']['time-thresh']
+            start_time = time - time_thresh
+            end_time = time + time_thresh
 
         # Directory where the weather files are stored
         weather_dir = self.config['data-gather']['weather']['out-dir']
@@ -76,7 +84,7 @@ class WeatherInterpolator:
         # Iterate over all files in the directory
         for file in os.listdir(weather_dir):
             # Check if file matches the expected 'start_end.csv' pattern
-            if '_' in file and file.endswith('.csv'):
+            if '_' in file and file.endswith('.csv') and len(file) == 25:
                 # Extract start and end times from the filename
                 file_start, file_end = map(int, file.rstrip('.csv').split('_'))
                 # Check if the file's time range overlaps with the desired time range
@@ -91,16 +99,15 @@ class WeatherInterpolator:
 
     def estimate_scalars(self, target, scalars, stations_data=None):
 
-        # self.log_verbose(f'Estimating {scalars} at {target["timestamp"]}')
+        # self.log_verbose(f'Estimating {scalars} at {target["time"]}')
 
         if stations_data is None:
             # self.log_verbose('Loading relevant files from database')
-            relevant_data = self.load_relevant_files(target['timestamp'])
+            relevant_data = self.load_relevant_files(target['time'])
         else:
             relevant_data = stations_data.copy()
-
         # self.log_verbose('Cutting data to time threshold')
-        time_mask = abs(relevant_data['timestamp'] - target['timestamp']) <= self.config['statistics']['interpolation']['weather']['time-thresh']
+        time_mask = abs(relevant_data['time'] - target['time']) <= self.config['statistics']['interpolation']['weather']['time-thresh']
         lat_mask = abs(relevant_data['lat'] - target['lat']) <= 1
         lon_mask = abs(relevant_data['lon'] - target['lon']) <= 1
         relevant_data = relevant_data[time_mask & lat_mask & lon_mask]
@@ -119,13 +126,14 @@ class WeatherInterpolator:
                     {
                         'tmpf': row['tmpf'],
                         'elevation': row['elevation'],
+                        'sknt': row['sknt'],
                         'clouds': row[['skyc1', 'skyc2', 'skyc3', 'skyc4']].apply(pd.to_numeric, errors='coerce').values,
                         'cloud_levels': row[['skyl1', 'skyl2', 'skyl3', 'skyl4']].apply(pd.to_numeric, errors='coerce').values
                     },
                     self.config)
                 for _, row in relevant_data.iterrows()]
         # self.log_verbose('Removing useless columns')
-        relevant_data = relevant_data[['station', 'lat', 'lon', 'elevation', 'timestamp', 'sigma'] + [f'{scalar}_h' for scalar in scalars]].copy()
+        relevant_data = relevant_data[['station_id', 'lat', 'lon', 'elevation', 'time', 'sigma'] + [f'{scalar}_h' for scalar in scalars]].copy()
         # self.log_verbose('Removing NaNs')
         for scalar in scalars:
             relevant_data = relevant_data.dropna(subset=[f'{scalar}_h'])
@@ -134,20 +142,18 @@ class WeatherInterpolator:
             'lon': 'mean',
             'lat': 'mean',
             'elevation': 'mean',
-            'timestamp': 'mean',
-
+            'time': 'mean',
             'sigma': 'mean'
         }
         for scalar in scalars:
             agg_dict[f'{scalar}_h'] = 'mean'
-        relevant_data = relevant_data.groupby('station').agg(agg_dict)
+        relevant_data = relevant_data.groupby('station_id').agg(agg_dict)
         if len(relevant_data) == 0:
             return np.repeat(np.nan, len(scalars))
         # self.log_verbose('Estimating scalar at target location')
         scalars_interpolated = np.zeros(len(scalars))
         for j, scalar in enumerate(scalars):
             #, target_lat, target_lon, data_lats, data_lons, data_sigmas, data_quantities
-            #print(target['lat'], target['lon'], relevant_data['lat'].values, relevant_data['lon'].values, relevant_data['sigma'].values, relevant_data[f'{scalar}_h'].values)
             scalars_interpolated[j] = gaussian_interpolation(
                 target['lat'],
                 target['lon'],
@@ -181,9 +187,11 @@ class WeatherInterpolator:
         return flight
 
     def compute_flight_weather_quantities(self, scalars, state_vectors, stations_data=None):
-        if not isinstance(scalars, list) or not isinstance(scalars, np.ndarray):
+        if not isinstance(scalars, list) and not isinstance(scalars, np.ndarray):
             scalars = [scalars]
 
+        if stations_data is None:
+            stations_data = self.load_relevant_files([state_vectors.iloc[0]['time'], state_vectors.iloc[-1]['time']])
         scalar_values = {scalar: np.repeat(np.nan, len(state_vectors)) for scalar in scalars}
         step = self.config['statistics']['interpolation']['flights']['step']
 
@@ -191,7 +199,7 @@ class WeatherInterpolator:
             target = {
                 'lon': row['lon'],
                 'lat': row['lat'],
-                'timestamp': row['time'],
+                'time': row['time'],
                 'elevation': row['geoaltitude'],
                 }
             values = self.estimate_scalars(target, scalars, stations_data=stations_data)
@@ -201,7 +209,9 @@ class WeatherInterpolator:
         for scalar in scalars:
             state_vectors[scalar] = scalar_values[scalar]
             state_vectors[scalar] = state_vectors[scalar].interpolate(method='linear')
-            
-        flight = self.estimate_flight_wind(flight)
 
-        return flight
+        return state_vectors
+    
+    def computer_flight_weather_integrals(state_vectors):
+
+        return {'test':0}

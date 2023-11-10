@@ -115,7 +115,7 @@ class Querier:
         sigmas = np.zeros(len(stations))
         for i, row in stations.iterrows():
             # For every station, compute the distance to all other locations
-            distances = utils.haversine_distance(row['lat'], row['lon'], stations['lat'], stations['lon'])
+            distances = utils.haversine_distance(row['lat'], row['lon'], stations['lat'].values, stations['lon'].values)
             # Sort them from smallest to largers
             distances = sorted(distances)
             # Take the average of the closest 5 (not including itself)

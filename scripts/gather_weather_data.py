@@ -45,7 +45,6 @@ for date in range(start_date - chunk_size, end_date + chunk_size, chunk_size):
         querier = iem_query.Querier(CONFIG, logger=LOGGER)
         LOGGER.log(f'Gathering weather data for date {date} until date {date + chunk_size}')
         stations_data = querier.query_multiple_station_data(stations)
-        stations_data = weather_models.calibrate_stations(stations_data, CONFIG)
         stations_data.to_csv(filepath)
     else:
         LOGGER.log(f'Data for date {date} until date {date + chunk_size} already exists. Skipping...')
