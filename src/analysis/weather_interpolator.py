@@ -106,16 +106,12 @@ class WeatherInterpolator:
             relevant_data = self.load_relevant_files(target['time'])
         else:
             relevant_data = stations_data.copy()
-        # self.log_verbose('Cutting data to time threshold')
         time_mask = abs(relevant_data['time'] - target['time']) <= self.config['statistics']['interpolation']['weather']['time-thresh']
-        lat_mask = abs(relevant_data['lat'] - target['lat']) <= 1
-        lon_mask = abs(relevant_data['lon'] - target['lon']) <= 1
-        relevant_data = relevant_data[time_mask & lat_mask & lon_mask]
-        # relevant_data = relevant_data[time_mask]
-        # self.log_verbose(f'{len(relevant_data)} stations entries in time and position threshold')
-
-        if not any(time_mask & lat_mask & lon_mask):
-            return np.repeat(np.nan, len(scalars))
+        # lat_mask = abs(relevant_data['lat'] - target['lat']) <= 1
+        # lon_mask = abs(relevant_data['lon'] - target['lon']) <= 1
+        relevant_data = relevant_data[time_mask] #& lat_mask & lon_mask]
+        relevant_data['d'] = [utils.haversine_distance(target['lat'], target['lon'], row['lat'], row['lon']) for _, row in relevant_data.iterrows()]
+        relevant_data = relevant_data.sort_values(by='d').iloc[:min([10, int(len(relevant_data))])]
         
         for scalar in scalars:
             # self.log_verbose('Estimating scalar at proper elevation')
@@ -128,7 +124,8 @@ class WeatherInterpolator:
                         'elevation': row['elevation'],
                         'sknt': row['sknt'],
                         'clouds': row[['skyc1', 'skyc2', 'skyc3', 'skyc4']].apply(pd.to_numeric, errors='coerce').values,
-                        'cloud_levels': row[['skyl1', 'skyl2', 'skyl3', 'skyl4']].apply(pd.to_numeric, errors='coerce').values
+                        'cloud_levels': row[['skyl1', 'skyl2', 'skyl3', 'skyl4']].apply(pd.to_numeric, errors='coerce').values,
+                        'METAR': row['METAR']
                     },
                     self.config)
                 for _, row in relevant_data.iterrows()]
@@ -186,23 +183,29 @@ class WeatherInterpolator:
         
         return flight
 
-    def compute_flight_weather_quantities(self, scalars, state_vectors, stations_data=None):
+    def compute_flight_weather_quantities(self, scalars, state_vectors, stations_data=None, debug=False):
         if not isinstance(scalars, list) and not isinstance(scalars, np.ndarray):
             scalars = [scalars]
 
         if stations_data is None:
             stations_data = self.load_relevant_files([state_vectors.iloc[0]['time'], state_vectors.iloc[-1]['time']])
-        scalar_values = {scalar: np.repeat(np.nan, len(state_vectors)) for scalar in scalars}
+        scalar_values = {scalar: np.repeat(np.nan, len(state_vectors)).astype(float) for scalar in scalars}
         step = self.config['statistics']['interpolation']['flights']['step']
 
         for i, row in state_vectors.iloc[::step].iterrows():
+            if debug:
+                print(f'{i}/{len(state_vectors)}')
             target = {
                 'lon': row['lon'],
                 'lat': row['lat'],
-                'time': row['time'],
+                'time': float(row['time']),
                 'elevation': row['geoaltitude'],
                 }
+            if debug:
+                print(target)
             values = self.estimate_scalars(target, scalars, stations_data=stations_data)
+            if debug:
+                print("Appending Values")
             for j, scalar in enumerate(scalars):
                 scalar_values[scalar][i] = values[j]
             
