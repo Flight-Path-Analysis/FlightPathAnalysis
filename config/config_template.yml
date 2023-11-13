@@ -84,7 +84,7 @@ statistics:
             lat-lon-thresh: 0.1
         flights:
             # Step (in seconds) to be used in weather estimation for flights. Each seconds takes about 0.1 seconds to compute.
-            step: 60
+            step: 240
     # Routes to be analyzed
     routes-to-analyze: [
         ['KJFK','KLAX'],
