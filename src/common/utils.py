@@ -518,4 +518,25 @@ def gaussian_interpolation(target, data, quantity):
     avg = np.sum(weights*data[quantity])
     return avg
 
-MISSING_FUNCTION=object()
+def format_time(seconds):
+    if np.isnan(seconds):
+        return 'NaN'
+    # Calculate days, hours, minutes, and seconds
+    days = int(seconds // (24 * 3600))
+    seconds = int(seconds % (24 * 3600))
+    hours = int(seconds // 3600)
+    seconds %= 3600
+    minutes = int(seconds // 60)
+    seconds %= 60
+    
+    # Build the output string
+    time_str = ""
+    if days > 0:
+        time_str += f"{days}d "
+    if hours > 0 or days > 0:
+        time_str += f"{hours}h "
+    if minutes > 0 or hours > 0 or days > 0:
+        time_str += f"{minutes}m "
+    time_str += f"{seconds}s"
+
+    return time_str

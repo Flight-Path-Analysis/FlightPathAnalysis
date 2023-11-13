@@ -4,7 +4,7 @@ base-configs:
     root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
     # root-directory: 'C:\Users\andre\Dropbox\Personal Projects\FlightPathAnalysis'
     # Tag for current run for log files
-    tag: 'IEM_Query_testing'
+    tag: 'tutorial'
     # File containing the credentials for OpenSky database
     opensky-credentials: 'config/opensky_login.yml'
     # FIle containing the credentials for the weather database
@@ -24,10 +24,13 @@ data-gather:
     chunk-size: 86400
     # Routes of interest to be downloaded on the data gathering step
     routes-of-interest: [
-    ['KLAX','KJFK'],
-    ['KJFK','EGLL'],
-    ['EGLL','KJFK']
-    ]
+        ['KJFK','KLAX'],
+        ['KLAX','KJFK'],
+        ['KLAX','KSFO'],
+        ['KSFO','KLAX'],
+        ['KDEN','KSEA'],
+        ['KSEA','KDEN']
+        ]
     # Continue data gather from last attemp. If False, it will start from scratch
     continue-from-last: True
     # Configurations interesting for gathering flight data.
@@ -49,7 +52,7 @@ data-gather:
     # Configurations interesting for gathering weather data.
     weather:
         # directory to output data at from the root directory
-        out-dir: 'data/weather/'
+        out-dir: 'tutorial_data/'
         # How physically close the weather station needs to be to the flight route (not account for altitude) (meters)
         haversine-distance-thresh: 10000
         # Columns of interest to be downloaded on the data gathering step
@@ -77,13 +80,20 @@ statistics:
         weather:
             # Minimum time difference for the weather data to be considered in models and interpolation
             time-thresh: 1800
+            # Minimum latitude and longitude percent differentce for the weather data to be considered in models and interpolation
+            lat-lon-thresh: 0.1
         flights:
             # Step (in seconds) to be used in weather estimation for flights. Each seconds takes about 0.1 seconds to compute.
-            step: 60
+            step: 240
     # Routes to be analyzed
     routes-to-analyze: [
-    ['KJFK','KLAX']
-    ]
+        ['KJFK','KLAX'],
+        ['KLAX','KJFK'],
+        ['KLAX','KSFO'],
+        ['KSFO','KLAX'],
+        ['KDEN','KSEA'],
+        ['KSEA','KDEN']
+        ]
 
 # Configurations for the models used in data processing and analysis
 models:
@@ -125,7 +135,7 @@ models:
         # Maximum height to compute weather models (in case of numerical) in meters
         max-height: 20000
         # Precision for integration
-        integration-precision: 10000
+        integration-precision: 100
 
 # All configurations for logging messages
 log:

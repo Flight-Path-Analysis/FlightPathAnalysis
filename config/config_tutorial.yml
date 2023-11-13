@@ -24,10 +24,13 @@ data-gather:
     chunk-size: 86400
     # Routes of interest to be downloaded on the data gathering step
     routes-of-interest: [
-    ['KLAX','KJFK'],
-    ['KJFK','EGLL'],
-    ['EGLL','KJFK']
-    ]
+        ['KJFK','KLAX'],
+        ['KLAX','KJFK'],
+        ['KLAX','KSFO'],
+        ['KSFO','KLAX'],
+        ['KDEN','KSEA'],
+        ['KSEA','KDEN']
+        ]
     # Continue data gather from last attemp. If False, it will start from scratch
     continue-from-last: True
     # Configurations interesting for gathering flight data.
@@ -77,13 +80,20 @@ statistics:
         weather:
             # Minimum time difference for the weather data to be considered in models and interpolation
             time-thresh: 1800
+            # Minimum latitude and longitude percent differentce for the weather data to be considered in models and interpolation
+            lat-lon-thresh: 0.1
         flights:
             # Step (in seconds) to be used in weather estimation for flights. Each seconds takes about 0.1 seconds to compute.
             step: 60
     # Routes to be analyzed
     routes-to-analyze: [
-    ['KJFK','KLAX']
-    ]
+        ['KJFK','KLAX'],
+        ['KLAX','KJFK'],
+        ['KLAX','KSFO'],
+        ['KSFO','KLAX'],
+        ['KDEN','KSEA'],
+        ['KSEA','KDEN']
+        ]
 
 # Configurations for the models used in data processing and analysis
 models:
