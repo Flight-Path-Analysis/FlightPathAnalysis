@@ -67,7 +67,7 @@ Pillow==10.1.0
 platformdirs
 pluggy==1.3.0
 ply==3.11
-prometheus-client==0.17.1
+prometheus-client==0.18.0
 pycparser==2.21
 pyflightdata==0.8.6.2
 Pympler==1.0.1
