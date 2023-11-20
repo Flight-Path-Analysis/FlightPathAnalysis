@@ -82,7 +82,7 @@ referencing==0.30.2
 requests==2.31.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
-rpds-py==0.10.6
+rpds-py==0.13.1
 scipy==1.11.3
 Send2Trash==1.8.2
 simplification==0.7.9
