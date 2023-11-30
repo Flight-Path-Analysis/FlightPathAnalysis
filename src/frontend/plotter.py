@@ -13,6 +13,7 @@ from scipy.stats import gaussian_kde
 from matplotlib.collections import LineCollection
 from matplotlib.patches import Circle
 from src.common import utils
+from src.models import weather
 
 QUANTITY_NAMES = {
 'lat': 'Latitude (deg)',
@@ -356,7 +357,7 @@ class Plotter:
         if filename is not None:
             fig.savefig(filename) 
 
-    def plot_route(self, state_vector_file, compressor, filename = None, ax = None, title = None):
+    def plot_route(self, state_vectors, filename = None, ax = None, title = None, color=None):
         """
         Plots the route of a single aircraft based on its state vectors.
 
@@ -384,7 +385,7 @@ class Plotter:
         ax.add_feature(cfeature.STATES, linestyle=':')
 
         ys = np.zeros((2, self.config['plotting']['point-precision']))
-        df = compressor.decode_to_dataframe_from_file(state_vector_file)
+        df = state_vectors
         columns = ['lat', 'lon']
         df_interp = {col:[] for col in columns}
         df_interp = {'time':np.linspace(df['time'].iloc[0], df['time'].iloc[-1], num=self.config['plotting']['point-precision'])}
@@ -394,7 +395,10 @@ class Plotter:
         ys[0, :] = df_interp['lon']
         ys[1, :] = df_interp['lat']
 
-        ax.plot(ys[0,:], ys[1,:], color = colormap(1.))
+        if color is None:
+            color = colormap(1.)
+
+        ax.plot(ys[0,:], ys[1,:], color = color)
         if title is None:
             self.set_route_ax_style(ax, 'Aircraft Route', legend=False)
         else:
@@ -652,10 +656,23 @@ class Plotter:
     def plot_interpolated_scalar(self, station_data, scalar, time, altitude = 0, filename = None, ax = None, fig = None, title = None):
         colormap = getattr(plt.cm, self.config['plotting']['cmap'])
         time_threshold = self.config['statistics']['interpolation']['weather']['time-thresh']
-        relevant_data = station_data[['station', 'lat', 'lon', 'elevation', 'timestamp', scalar, 'sigma']].copy()
+        #relevant_data = station_data[['station', 'lat', 'lon', 'elevation', 'timestamp', scalar, 'sigma']].copy()
         relevant_data = station_data[abs(station_data['timestamp'] - time) <= time_threshold/2].copy()
-        relevant_data = relevant_data.dropna(subset=[scalar])
-        relevant_data[f'{scalar}_elev'] = [row[f'{scalar}_model'].predict([altitude])[0] for _, row in relevant_data.iterrows()]
+        #relevant_data = relevant_data.dropna(subset=[scalar])
+        if scalar == 'tmpf':
+            scalar_elev = [weather.temperature_model(altitude, row.elevation, row.tmpf, self.config['models']['temperature']['default-coefficient']) for row in relevant_data.itertuples()]
+        if scalar == 'sknt':
+            G = self.config['models']['wind']['default-coefficient']
+            scalar_elev = [weather.wind_speed_model(altitude, row.elevation, row.tmpf, G) for row in relevant_data.itertuples()]
+        if scalar == 'air_pressure':
+            LR = self.config['models']['temperature']['default-coefficient']
+            g = self.config['models']['constants']['gravitational-acceleration']
+            R = self.config['models']['constants']['gas-constant']
+            M = self.config['models']['constants']['molar-mass-air']
+            P0 = self.config['models']['constants']['atm-pressure']
+            scalar_elev = [weather.air_pressure_model(altitude, row.elevation, row.tmpf, LR, g, R, M, P0) for row in relevant_data.itertuples()]
+            
+        relevant_data[f'{scalar}_elev'] = scalar_elev
         relevant_data = relevant_data.groupby('station').agg({
             'lon': 'mean',
             'lat': 'mean',

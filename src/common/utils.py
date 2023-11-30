@@ -399,7 +399,7 @@ def timeout_handler(signum, frame):
     """
     raise TimeoutError("Operation timed out!")
 
-@numba.njit
+#@numba.njit
 def haversine_distance(lat1, lon1, lat2, lon2, R=6.371e6):
     """
     Calculate the Haversine distance between two points on the earth specified by longitude and latitude.
