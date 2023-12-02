@@ -2,9 +2,8 @@
 
 ## Description
 
-Flight Path Analysis is a comprehensive project developed as part of the Erdös Institute's Data Science Bootcamp. The project allows users to download data from the OpenSky database (provided the user has the required credentials) and aims to organize and compress this data based on a precision factor. Though still in its initial stages, the ultimate goal is to download weather data (the method is yet to be decided) and perform statistical analysis, correlating deviations in flight paths with weather conditions. Additionally, the project aspires to build and train a machine-learning tool to predict extra fuel costs due to weather deviations.
+Flight Path Analysis is a comprehensive project developed as part of the Erdös Institute's Data Science Bootcamp. The project allows users to download data from the OpenSky database (provided the user has the required credentials) and the Iowa Environmental Mesonet and aims to organize and compress this data based on a precision factor. Then, this repository can be used to perform statistical analysis (correlate deviations in flight paths with weather conditions), as well as to build and train a machine-learning tool to predict extra fuel costs due to weather deviations.
 
-Currently, only the data-gathering component is available.
 
 ## Documentation
 
@@ -13,7 +12,7 @@ Detailed documentation for `Flight Path Analysis` can be found [here](https://fl
 ## Features
 
 - **Data Gathering**: Simplified packages for downloading data from OpenSky and potential weather data services.
-- **Data Compression**: Flight Path and Weather Data compression, simplification, and encoding.
+- **Data Compression**: Flight Path and Weather Data compression, simplification, and encoding using relational databases/sqlite.
 - **Statistical Analysis**: Analyze the correlation between flight paths and weather conditions.
 - **Machine Learning**: A workflow to train and test a predictive machine learning algorithm for assessing fuel costs.
 
@@ -64,7 +63,7 @@ To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-
 
 ## Contact
 
-For any queries or feedback, you can contact me through GitHub or drop an email at [andrerg01@gmail.com](mailto:andrerg01@gmail.com).
+For any queries or feedback, you can contact a team member through GitHub or drop an email at [andrerg01@gmail.com](mailto:andrerg01@gmail.com).
 
 ## Acknowledgments
 
