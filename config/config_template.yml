@@ -4,15 +4,15 @@ base-configs:
     root-directory: '/Users/andreguimaraes/Dropbox/Personal Projects/FlightPathAnalysis/'
     # root-directory: 'C:\Users\andre\Dropbox\Personal Projects\FlightPathAnalysis'
     # Tag for current run for log files
-    tag: 'tutorial'
+    tag: 'DEN_SEA_2022-01-01_2023-01-01'
     # File containing the credentials for OpenSky database
     opensky-credentials: 'config/opensky_login.yml'
     # FIle containing the credentials for the weather database
     weather-credentials:
     # Starting date of flights/weather of interest
-    start-date: '2023-01-01'
+    start-date: '2022-01-01'
     # Ending date of flights/weather of interest
-    end-date: '2023-01-02'
+    end-date: '2023-01-01'
 
 # All configurations for gathering data
 data-gather:
@@ -24,11 +24,6 @@ data-gather:
     chunk-size: 86400
     # Routes of interest to be downloaded on the data gathering step
     routes-of-interest: [
-        ['KJFK','KLAX'],
-        ['KLAX','KJFK'],
-        ['KLAX','KSFO'],
-        ['KSFO','KLAX'],
-        ['KDEN','KSEA'],
         ['KSEA','KDEN']
         ]
     # Continue data gather from last attemp. If False, it will start from scratch
@@ -52,7 +47,7 @@ data-gather:
     # Configurations interesting for gathering weather data.
     weather:
         # directory to output data at from the root directory
-        out-dir: 'tutorial_data/'
+        out-dir: 'data/weather/'
         # How physically close the weather station needs to be to the flight route (not account for altitude) (meters)
         haversine-distance-thresh: 10000
         # Columns of interest to be downloaded on the data gathering step
