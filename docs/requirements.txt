@@ -23,7 +23,7 @@ cycler==0.12.1
 defusedxml==0.7.1
 docutils==0.18.1
 fastjsonschema==2.18.1
-FlightRadarAPI==1.3.12
+FlightRadarAPI==1.3.24
 fonttools==4.47.0
 fqdn==1.5.1
 html5lib==1.1
