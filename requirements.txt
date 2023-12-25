@@ -37,7 +37,7 @@ json5==0.9.14
 jsonpath-rw==1.4.0
 jsonpointer==2.4
 jsonschema==4.20.0
-jsonschema-specifications==2023.7.1
+jsonschema-specifications==2023.12.1
 jupyter-events==0.8.0
 jupyter-lsp==2.2.0
 jupyter_client
